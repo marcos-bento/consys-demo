@@ -2,15 +2,32 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, ShoppingCart, Package, DollarSign, FileText } from 'lucide-react';
+import {
+  Home,
+  Banknote,
+  ShoppingCart,
+  Package,
+  DollarSign,
+  FileText,
+  ClipboardList,
+  Truck,
+  ShoppingBag,
+  LifeBuoy,
+  ShieldCheck,
+} from 'lucide-react';
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/crm', label: 'CRM', icon: Users },
-  { href: '/comercial', label: 'Comercial', icon: ShoppingCart },
+  { href: '/crm', label: 'Negócios', icon: Banknote },
+  { href: '/documentos', label: 'Documentos', icon: ShoppingCart },
+  { href: '/compras', label: 'Compras', icon: ShoppingBag },
+  { href: '/cadastros', label: 'Cadastros', icon: ClipboardList },
   { href: '/estoque', label: 'Estoque', icon: Package },
+  { href: '/assistencias', label: 'Assistências', icon: LifeBuoy },
   { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
-  { href: '/relatorios', label: 'Relatórios', icon: FileText },
+  { href: '/frota', label: 'Frota', icon: Truck },
+  { href: '/administrador', label: 'Administrador', icon: ShieldCheck },
+  { href: '/relatorios', label: 'Relatorios', icon: FileText },
 ];
 
 interface SidebarProps {
@@ -21,7 +38,7 @@ export default function Sidebar({ onLinkClick }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <div className="w-64 bg-gray-800 text-white flex flex-col">
+    <div className="w-64 min-h-full bg-blue-900 text-white flex flex-col">
       <div className="p-4">
         <h1 className="text-xl font-bold">Con'SYS</h1>
       </div>

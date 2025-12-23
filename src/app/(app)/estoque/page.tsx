@@ -1,17 +1,31 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { mockProdutos, Produto } from '../../../lib/mock/estoque';
 import { Search, Plus, Eye } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+import { mockProdutos, Produto } from '../../../lib/mock/estoque';
 
 export default function Estoque() {
   const router = useRouter();
@@ -19,12 +33,18 @@ export default function Estoque() {
   const [search, setSearch] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState<string>('Todos');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newProduto, setNewProduto] = useState({ nome: '', codigo: '', categoria: 'Mesas' as Produto['categoria'], estoque: 0 });
+  const [newProduto, setNewProduto] = useState({
+    nome: '',
+    codigo: '',
+    categoria: 'Mesas' as Produto['categoria'],
+    estoque: 0,
+  });
 
   const filteredProdutos = useMemo(() => {
-    return produtos.filter(produto => {
-      const matchesSearch = produto.nome.toLowerCase().includes(search.toLowerCase()) ||
-                           produto.codigo.toLowerCase().includes(search.toLowerCase());
+    return produtos.filter((produto) => {
+      const matchesSearch =
+        produto.nome.toLowerCase().includes(search.toLowerCase()) ||
+        produto.codigo.toLowerCase().includes(search.toLowerCase());
       const matchesCategoria = categoriaFilter === 'Todos' || produto.categoria === categoriaFilter;
       return matchesSearch && matchesCategoria;
     });
@@ -76,6 +96,7 @@ export default function Estoque() {
               <SelectItem value="Cadeiras">Cadeiras</SelectItem>
               <SelectItem value="Armários">Armários</SelectItem>
               <SelectItem value="Acessórios">Acessórios</SelectItem>
+              <SelectItem value="Frota">Frota</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -107,7 +128,12 @@ export default function Estoque() {
               </div>
               <div>
                 <Label>Categoria</Label>
-                <Select value={newProduto.categoria} onValueChange={(value: Produto['categoria']) => setNewProduto({ ...newProduto, categoria: value })}>
+                <Select
+                  value={newProduto.categoria}
+                  onValueChange={(value: Produto['categoria']) =>
+                    setNewProduto({ ...newProduto, categoria: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -116,6 +142,7 @@ export default function Estoque() {
                     <SelectItem value="Cadeiras">Cadeiras</SelectItem>
                     <SelectItem value="Armários">Armários</SelectItem>
                     <SelectItem value="Acessórios">Acessórios</SelectItem>
+                    <SelectItem value="Frota">Frota</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -128,7 +155,9 @@ export default function Estoque() {
                   min="0"
                 />
               </div>
-              <Button onClick={handleAddProduto} className="w-full">Salvar</Button>
+              <Button onClick={handleAddProduto} className="w-full">
+                Salvar
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -163,9 +192,7 @@ export default function Estoque() {
                     </TableCell>
                     <TableCell>{produto.estoque}</TableCell>
                     <TableCell>
-                      <Badge className={status.color}>
-                        {status.text}
-                      </Badge>
+                      <Badge className={status.color}>{status.text}</Badge>
                     </TableCell>
                     <TableCell>
                       <Button

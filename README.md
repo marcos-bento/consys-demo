@@ -34,3 +34,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Upgrades
+
+- Sumir a bolinha flutuante do lado esquerdo com "N" provavelmente nativo do Next;
+- localhost:3000 (aprimorar)
+- Adicionar uma nova categoria chamada "Frota"
+- editar "comercial" e por o nome "documentos"
+- Adicionar uma nova categoria chamada "Compras"
+- Adicionar uma nova categoria chamada "Assistências"
+- Adicionar uma nova categoria chamada "Administrador"

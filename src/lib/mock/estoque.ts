@@ -2,7 +2,7 @@ export interface Produto {
   id: string;
   nome: string;
   codigo: string;
-  categoria: 'Mesas' | 'Cadeiras' | 'Armários' | 'Acessórios';
+  categoria: 'Mesas' | 'Cadeiras' | 'Armários' | 'Acessórios' | 'Frota';
   estoque: number;
 }
 
@@ -26,6 +26,7 @@ export const mockProdutos: Produto[] = [
   { id: '10', nome: 'Apoio de Livros', codigo: 'ACE-001', categoria: 'Acessórios', estoque: 25 },
   { id: '11', nome: 'Suporte Monitor', codigo: 'ACE-002', categoria: 'Acessórios', estoque: 10 },
   { id: '12', nome: 'Cabo HDMI', codigo: 'ACE-003', categoria: 'Acessórios', estoque: 50 },
+  { id: '13', nome: 'Van de Entregas', codigo: 'FRO-001', categoria: 'Frota', estoque: 2 },
 ];
 
 export const mockMovimentacoes: Record<string, Movimentacao[]> = {
@@ -67,5 +68,9 @@ export const mockMovimentacoes: Record<string, Movimentacao[]> = {
   ],
   '12': [
     { data: '2025-12-04', tipo: 'Entrada', quantidade: 50, observacao: 'Compra' },
+  ],
+  '13': [
+    { data: '2025-12-03', tipo: 'Entrada', quantidade: 2, observacao: 'Aquisição frota' },
+    { data: '2025-12-18', tipo: 'Saída', quantidade: 1, observacao: 'Manutenção programada' },
   ],
 };

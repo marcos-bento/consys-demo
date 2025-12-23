@@ -24,6 +24,7 @@ export default function Login() {
             <input type="password" className="w-full rounded border p-2" />
           </div>
           <button
+            style={{ cursor: "pointer" }}
             type="submit"
             className="w-full rounded bg-blue-500 p-2 text-white"
           >

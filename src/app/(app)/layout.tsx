@@ -13,7 +13,7 @@ export default function AppLayout({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <Sidebar />

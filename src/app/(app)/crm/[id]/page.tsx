@@ -35,7 +35,7 @@ export default function LeadDetail() {
         </div>
         <Button onClick={() => router.push('/crm')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar ao CRM
+          Voltar a Negócios
         </Button>
       </div>
     );
@@ -57,7 +57,7 @@ export default function LeadDetail() {
       <div className="flex items-center space-x-2 text-sm text-gray-600">
         <Link href="/dashboard" className="hover:text-gray-900">Dashboard</Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/crm" className="hover:text-gray-900">CRM</Link>
+        <Link href="/crm" className="hover:text-gray-900">Negócios</Link>
         <ChevronRight className="h-4 w-4" />
         <span>{lead.empresa}</span>
       </div>
@@ -120,7 +120,7 @@ export default function LeadDetail() {
 
       {/* Ações */}
       <div className="flex justify-end">
-        <Button onClick={() => router.push(`/comercial/nova?leadId=${lead.id}`)}>
+        <Button onClick={() => router.push(`/documentos/nova?leadId=${lead.id}`)}>
           <FileText className="mr-2 h-4 w-4" />
           Criar Proposta
         </Button>

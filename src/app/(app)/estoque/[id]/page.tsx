@@ -1,17 +1,18 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ArrowLeft, ChevronRight, Minus, Plus } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { mockProdutos, mockMovimentacoes, Produto, Movimentacao } from '../../../lib/mock/estoque';
-import { ChevronRight, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { mockProdutos, mockMovimentacoes, type Movimentacao, type Produto } from '../../../../lib/mock/estoque';
 
 export default function ProdutoDetail() {
   const params = useParams();
@@ -25,7 +26,7 @@ export default function ProdutoDetail() {
   const [quantidade, setQuantidade] = useState(0);
   const [observacao, setObservacao] = useState('');
 
-  const produto = produtos.find(p => p.id === id);
+  const produto = produtos.find((p) => p.id === id);
   const produtoMovimentacoes = movimentacoes[id] || [];
 
   if (!produto) {
@@ -59,7 +60,7 @@ export default function ProdutoDetail() {
     setMovimentacoes({ ...movimentacoes, [id]: novasMovimentacoes });
 
     const novoEstoque = tipo === 'Entrada' ? produto.estoque + quantidade : produto.estoque - quantidade;
-    const novosProdutos = produtos.map(p => p.id === id ? { ...p, estoque: novoEstoque } : p);
+    const novosProdutos = produtos.map((p) => (p.id === id ? { ...p, estoque: novoEstoque } : p));
     setProdutos(novosProdutos);
 
     setQuantidade(0);
@@ -80,9 +81,13 @@ export default function ProdutoDetail() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center space-x-2 text-sm text-gray-600">
-        <Link href="/dashboard" className="hover:text-gray-900">Dashboard</Link>
+        <Link href="/dashboard" className="hover:text-gray-900">
+          Dashboard
+        </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/estoque" className="hover:text-gray-900">Estoque</Link>
+        <Link href="/estoque" className="hover:text-gray-900">
+          Estoque
+        </Link>
         <ChevronRight className="h-4 w-4" />
         <span>{produto.nome}</span>
       </div>
@@ -119,9 +124,7 @@ export default function ProdutoDetail() {
             <div>
               <Label className="text-sm font-medium">Estoque Atual</Label>
               <p className="text-lg">{produto.estoque} unidades</p>
-              <Badge className={`${status.color} mt-1`}>
-                {status.text}
-              </Badge>
+              <Badge className={`${status.color} mt-1`}>{status.text}</Badge>
             </div>
           </div>
         </CardContent>
@@ -147,9 +150,7 @@ export default function ProdutoDetail() {
                 <TableRow key={index}>
                   <TableCell>{new Date(mov.data).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell>
-                    <Badge variant={mov.tipo === 'Entrada' ? 'default' : 'destructive'}>
-                      {mov.tipo}
-                    </Badge>
+                    <Badge variant={mov.tipo === 'Entrada' ? 'default' : 'destructive'}>{mov.tipo}</Badge>
                   </TableCell>
                   <TableCell>{mov.quantidade}</TableCell>
                   <TableCell>{mov.observacao}</TableCell>
@@ -237,9 +238,4 @@ export default function ProdutoDetail() {
       </div>
     </div>
   );
-}
-
-// Componente Label simples
-function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <label className={`block text-sm font-medium text-gray-700 ${className}`}>{children}</label>;
 }

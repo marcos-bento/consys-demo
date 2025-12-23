@@ -1,8 +1,8 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, User, Menu } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Menu, Search, User } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,13 +10,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 
 const titles: Record<string, string> = {
   '/dashboard': 'Dashboard',
-  '/crm': 'CRM',
-  '/comercial': 'Comercial',
+  '/crm': 'Negócios',
+  '/comercial': 'Documentos',
+  '/documentos': 'Documentos',
+  '/compras': 'Compras',
+  '/cadastros': 'Cadastros',
   '/estoque': 'Estoque',
+  '/assistencias': 'Assistências',
   '/financeiro': 'Financeiro',
+  '/frota': 'Frota',
+  '/administrador': 'Administrador',
   '/relatorios': 'Relatórios',
 };
 
@@ -27,7 +34,7 @@ interface HeaderProps {
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const title = titles[pathname] || 'Con\'SYS';
+  const title = titles[pathname] || "Con'SYS";
 
   const handleLogout = () => {
     router.push('/login');

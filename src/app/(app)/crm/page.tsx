@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { mockLeads, Lead } from '../../../lib/mock/crm';
 import { Search, Plus, Eye } from 'lucide-react';
 
-export default function CRM() {
+export default function Negocios() {
   const router = useRouter();
   const [leads, setLeads] = useState<Lead[]>(mockLeads);
   const [search, setSearch] = useState('');
@@ -29,6 +29,13 @@ export default function CRM() {
       return matchesSearch && matchesStatus;
     });
   }, [leads, search, statusFilter]);
+
+  const pipelineStages: { title: string; status: Lead['status'] }[] = [
+    { title: 'Novos', status: 'Novo' },
+    { title: 'Em contato', status: 'Em contato' },
+    { title: 'Qualificados', status: 'Qualificado' },
+    { title: 'Perdidos', status: 'Perdido' },
+  ];
 
   const handleAddLead = () => {
     const id = (leads.length + 1).toString();
@@ -55,8 +62,8 @@ export default function CRM() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">CRM</h1>
-        <p className="text-gray-600">Gerencie seus leads e contatos</p>
+        <h1 className="text-3xl font-bold">Negócios</h1>
+        <p className="text-gray-600">Visualize e mova leads no funil de vendas</p>
       </div>
 
       {/* Barra superior */}
@@ -130,6 +137,45 @@ export default function CRM() {
             </div>
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Negócios */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {pipelineStages.map((stage) => {
+          const stageLeads = filteredLeads.filter((lead) => lead.status === stage.status);
+          return (
+            <Card key={stage.status}>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-base font-semibold">{stage.title}</CardTitle>
+                <Badge variant="outline">{stageLeads.length}</Badge>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {stageLeads.length === 0 && (
+                  <p className="text-sm text-gray-500">Sem leads neste estágio.</p>
+                )}
+                {stageLeads.map((lead) => (
+                  <div key={lead.id} className="rounded-md border p-3 space-y-2 bg-white">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{lead.empresa}</span>
+                      <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
+                    </div>
+                    <div className="text-sm text-gray-600">{lead.contato}</div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{lead.responsavel}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/crm/${lead.id}`)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Tabela */}
