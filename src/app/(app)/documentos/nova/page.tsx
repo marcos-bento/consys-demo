@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 
-import { mockLeads } from '../../../../lib/mock/crm';
-import { mockPropostas, type ItemProposta, type Proposta } from '../../../../lib/mock/comercial';
+import type { ItemProposta, Proposta } from '../../../../lib/mock/comercial';
+import type { Documento } from '../../../../lib/mock/documentos';
+import { useDemoData } from '@/src/lib/demo-context';
 
 // Componente Label simples
 function Label({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -21,6 +22,8 @@ export default function NovoDocumento() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const leadId = searchParams.get('leadId');
+  const negocioId = searchParams.get('negocioId');
+  const { leads, negocios, propostas, setPropostas, documentos, setDocumentos } = useDemoData();
 
   const [cliente, setCliente] = useState('');
   const [itens, setItens] = useState<ItemProposta[]>([{ produto: '', qtd: 1, valorUnit: 0 }]);
@@ -28,12 +31,19 @@ export default function NovoDocumento() {
 
   useEffect(() => {
     if (leadId) {
-      const lead = mockLeads.find((l: { id: string; empresa: string }) => l.id === leadId);
+      const lead = leads.find((l) => l.id === leadId);
       if (lead) {
         setCliente(lead.empresa);
+        return;
       }
     }
-  }, [leadId]);
+    if (negocioId) {
+      const negocio = negocios.find((n) => n.id === negocioId);
+      if (negocio) {
+        setCliente(negocio.empresa);
+      }
+    }
+  }, [leadId, negocioId, leads, negocios]);
 
   const addItem = () => {
     setItens([...itens, { produto: '', qtd: 1, valorUnit: 0 }]);
@@ -53,7 +63,41 @@ export default function NovoDocumento() {
   const total = subtotal - desconto;
 
   const saveProposta = (status: Proposta['status']) => {
-    // Em um app real, salvaria no backend com status
+    const nextId = (propostas.length + 1).toString();
+    const nextCodigo = `PROP-${String(nextId).padStart(3, '0')}`;
+    const novaProposta: Proposta = {
+      id: nextId,
+      codigo: nextCodigo,
+      cliente: cliente || 'Cliente sem nome',
+      status,
+      data: new Date().toISOString().split('T')[0],
+      itens,
+      desconto,
+    };
+    setPropostas([...propostas, novaProposta]);
+
+    const docFromProposta: Documento = {
+      id: `p-${nextId}`,
+      codigo: nextCodigo,
+      cliente: novaProposta.cliente,
+      tipo: 'Proposta',
+      titulo: `Proposta - ${novaProposta.cliente}`,
+      descricao: novaProposta.desconto ? `Desconto: ${novaProposta.desconto}` : 'Documento gerado no Comercial',
+      data: novaProposta.data,
+      status: status === 'Enviada' ? 'Enviado' : 'Rascunho',
+      responsavel: 'Equipe Comercial',
+      itens: novaProposta.itens.map((item) => ({
+        descricao: item.produto,
+        qtd: item.qtd,
+        valorUnit: item.valorUnit,
+      })),
+      observacoes: novaProposta.desconto ? `Desconto aplicado: ${novaProposta.desconto}` : undefined,
+      origem: 'Comercial',
+      createdAt: novaProposta.data,
+      updatedAt: novaProposta.data,
+    };
+    setDocumentos([...documentos, docFromProposta]);
+
     router.push('/documentos');
   };
 

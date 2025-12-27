@@ -6,6 +6,8 @@ export interface Lancamento {
   vencimento: string; // ISO date
   valor: number;
   pago: boolean;
+  categoria?: string;
+  observacao?: string;
 }
 
 export const mockLancamentos: Lancamento[] = [

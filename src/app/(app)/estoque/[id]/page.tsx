@@ -1,241 +1,347 @@
 'use client';
 
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { ArrowLeft, ChevronRight, Minus, Plus } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ArrowLeft, Plus, Minus, RotateCcw, ShoppingCart, AlertTriangle, Eye } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { mockProdutos, mockMovimentacoes, type Movimentacao, type Produto } from '../../../../lib/mock/estoque';
+import { Textarea } from '@/components/ui/textarea';
 
-export default function ProdutoDetail() {
+import type { Movimentacao, Produto } from '../../../lib/mock/estoque';
+import { useDemoData } from '@/src/lib/demo-context';
+
+export default function ProdutoEstoqueDetail() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const [produtos, setProdutos] = useState<Produto[]>(mockProdutos);
-  const [movimentacoes, setMovimentacoes] = useState<Record<string, Movimentacao[]>>(mockMovimentacoes);
-  const [isEntradaOpen, setIsEntradaOpen] = useState(false);
-  const [isSaidaOpen, setIsSaidaOpen] = useState(false);
-  const [quantidade, setQuantidade] = useState(0);
-  const [observacao, setObservacao] = useState('');
+  const { produtos, setProdutos, movimentacoes, setMovimentacoes } = useDemoData();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [tipoMovimentacao, setTipoMovimentacao] = useState<Movimentacao['tipo']>('Entrada');
+  const [movimentacao, setMovimentacao] = useState({
+    quantidade: 0,
+    observacao: '',
+  });
+  const [tipoFiltro, setTipoFiltro] = useState<string>('Todos');
 
   const produto = produtos.find((p) => p.id === id);
   const produtoMovimentacoes = movimentacoes[id] || [];
 
+  const filteredMovimentacoes = useMemo(() => {
+    if (tipoFiltro === 'Todos') return produtoMovimentacoes;
+    return produtoMovimentacoes.filter(m => m.tipo === tipoFiltro);
+  }, [produtoMovimentacoes, tipoFiltro]);
+
   if (!produto) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Produto não encontrado</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-semibold">Produto não encontrado</h1>
+          <Button onClick={() => router.push('/estoque')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar ao Estoque
+          </Button>
         </div>
-        <Button onClick={() => router.push('/estoque')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Voltar ao Estoque
-        </Button>
+        <Card>
+          <CardContent className="flex items-center justify-center py-8">
+            <p className="text-muted-foreground">Produto não encontrado no estoque.</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const handleMovimentacao = (tipo: 'Entrada' | 'Saída') => {
-    if (tipo === 'Saída' && quantidade > produto.estoque) {
-      alert('Quantidade insuficiente em estoque!');
-      return;
+  const getStatusBadge = (estoque: number, minimo?: number) => {
+    const minThreshold = minimo || 10;
+    if (estoque === 0) return { text: 'Sem estoque', color: 'bg-rose-50 text-rose-700 border border-rose-100' };
+    if (estoque < minThreshold) return { text: 'Baixo', color: 'bg-amber-50 text-amber-700 border border-amber-100' };
+    return { text: 'OK', color: 'bg-emerald-50 text-emerald-700 border border-emerald-100' };
+  };
+
+  const handleMovimentacao = () => {
+    if (movimentacao.quantidade <= 0) return;
+
+    let novoEstoque = produto.estoque;
+
+    if (tipoMovimentacao === 'Entrada') {
+      novoEstoque += movimentacao.quantidade;
+    } else if (tipoMovimentacao === 'Saída') {
+      if (movimentacao.quantidade > produto.estoque) {
+        alert('Erro: Quantidade insuficiente em estoque!');
+        return;
+      }
+      novoEstoque -= movimentacao.quantidade;
+    } else if (tipoMovimentacao === 'Ajuste') {
+      novoEstoque = movimentacao.quantidade;
     }
 
+    // Atualizar produto
+    const updatedProdutos = produtos.map(p =>
+      p.id === id ? { ...p, estoque: novoEstoque } : p
+    );
+    setProdutos(updatedProdutos);
+
+    // Registrar movimentação
     const novaMovimentacao: Movimentacao = {
+      id: Date.now().toString(),
       data: new Date().toISOString().split('T')[0],
-      tipo,
-      quantidade,
-      observacao,
+      tipo: tipoMovimentacao,
+      quantidade: tipoMovimentacao === 'Ajuste' ? novoEstoque : movimentacao.quantidade,
+      observacao: movimentacao.observacao,
+      usuario: 'Usuário Demo',
     };
 
-    const novasMovimentacoes = [...produtoMovimentacoes, novaMovimentacao];
-    setMovimentacoes({ ...movimentacoes, [id]: novasMovimentacoes });
+    const updatedMovimentacoes = {
+      ...movimentacoes,
+      [id]: [...produtoMovimentacoes, novaMovimentacao]
+    };
+    setMovimentacoes(updatedMovimentacoes);
 
-    const novoEstoque = tipo === 'Entrada' ? produto.estoque + quantidade : produto.estoque - quantidade;
-    const novosProdutos = produtos.map((p) => (p.id === id ? { ...p, estoque: novoEstoque } : p));
-    setProdutos(novosProdutos);
-
-    setQuantidade(0);
-    setObservacao('');
-    setIsEntradaOpen(false);
-    setIsSaidaOpen(false);
+    // Reset form
+    setMovimentacao({ quantidade: 0, observacao: '' });
+    setIsDialogOpen(false);
   };
 
-  const getStatusBadge = (estoque: number) => {
-    if (estoque === 0) return { text: 'Sem estoque', color: 'bg-red-100 text-red-800' };
-    if (estoque < 10) return { text: 'Baixo', color: 'bg-yellow-100 text-yellow-800' };
-    return { text: 'OK', color: 'bg-green-100 text-green-800' };
+  const openMovimentacaoDialog = (tipo: Movimentacao['tipo']) => {
+    setTipoMovimentacao(tipo);
+    setMovimentacao({ quantidade: 0, observacao: '' });
+    setIsDialogOpen(true);
   };
 
-  const status = getStatusBadge(produto.estoque);
+  const status = getStatusBadge(produto.estoque, produto.minimo);
+  const estoqueBaixo = produto.estoque < (produto.minimo || 10);
 
   return (
     <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center space-x-2 text-sm text-gray-600">
-        <Link href="/dashboard" className="hover:text-gray-900">
-          Dashboard
-        </Link>
-        <ChevronRight className="h-4 w-4" />
-        <Link href="/estoque" className="hover:text-gray-900">
-          Estoque
-        </Link>
-        <ChevronRight className="h-4 w-4" />
-        <span>{produto.nome}</span>
-      </div>
-
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Detalhes do Produto</h1>
+        <div>
+          <h1 className="text-3xl font-semibold">Detalhes do Estoque</h1>
+          <p className="text-muted-foreground">{produto.nome} • {produto.codigo}</p>
+        </div>
         <Button onClick={() => router.push('/estoque')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
       </div>
 
-      {/* Dados do Produto */}
+      {/* Resumo */}
       <Card>
         <CardHeader>
-          <CardTitle>Informações do Produto</CardTitle>
+          <CardTitle>Resumo do Produto</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm font-medium">Nome</Label>
-              <p className="text-lg">{produto.nome}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Produto</Label>
+              <p className="text-lg font-medium">{produto.nome}</p>
+              <p className="text-sm text-muted-foreground">{produto.codigo}</p>
             </div>
-            <div>
-              <Label className="text-sm font-medium">Código</Label>
-              <p className="text-lg">{produto.codigo}</p>
-            </div>
-            <div>
+            <div className="space-y-2">
               <Label className="text-sm font-medium">Categoria</Label>
-              <div className="mt-1">
-                <Badge variant="outline">{produto.categoria}</Badge>
+              <Badge variant="outline" className="text-sm">{produto.categoria}</Badge>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Estoque Atual</Label>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{produto.estoque} unidades</p>
+                <Badge className={status.color}>{status.text}</Badge>
+                {produto.minimo && (
+                  <p className="text-sm text-muted-foreground">Mínimo: {produto.minimo}</p>
+                )}
               </div>
             </div>
-            <div>
-              <Label className="text-sm font-medium">Estoque Atual</Label>
-              <p className="text-lg">{produto.estoque} unidades</p>
-              <Badge className={`${status.color} mt-1`}>{status.text}</Badge>
-            </div>
+          </div>
+
+          {/* Botões de ação */}
+          <div className="flex gap-2 pt-4 border-t">
+            <Button onClick={() => openMovimentacaoDialog('Entrada')} className="flex-1">
+              <Plus className="mr-2 h-4 w-4" />
+              Entrada
+            </Button>
+            <Button onClick={() => openMovimentacaoDialog('Saída')} variant="outline" className="flex-1">
+              <Minus className="mr-2 h-4 w-4" />
+              Saída
+            </Button>
+            <Button onClick={() => openMovimentacaoDialog('Ajuste')} variant="outline" className="flex-1">
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Ajuste
+            </Button>
           </div>
         </CardContent>
       </Card>
 
+      {/* Alertas */}
+      {estoqueBaixo && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="font-medium text-amber-800">Atenção: Estoque baixo</p>
+                <p className="text-sm text-amber-700">
+                  Estoque atual ({produto.estoque}) está abaixo do mínimo ({produto.minimo || 10})
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/compras/nova?produtoId=${produto.id}`)}
+              className="border-amber-300 text-amber-700 hover:bg-amber-100"
+            >
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Gerar Compra
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Movimentações */}
       <Card>
         <CardHeader>
-          <CardTitle>Movimentações</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Histórico de Movimentações</CardTitle>
+            <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Todos">Todos</SelectItem>
+                <SelectItem value="Entrada">Entrada</SelectItem>
+                <SelectItem value="Saída">Saída</SelectItem>
+                <SelectItem value="Ajuste">Ajuste</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Quantidade</TableHead>
-                <TableHead>Observação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {produtoMovimentacoes.map((mov, index) => (
-                <TableRow key={index}>
-                  <TableCell>{new Date(mov.data).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell>
-                    <Badge variant={mov.tipo === 'Entrada' ? 'default' : 'destructive'}>{mov.tipo}</Badge>
-                  </TableCell>
-                  <TableCell>{mov.quantidade}</TableCell>
-                  <TableCell>{mov.observacao}</TableCell>
+          {filteredMovimentacoes.length === 0 ? (
+            <div className="text-center py-8">
+              <Eye className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                {tipoFiltro === 'Todos'
+                  ? 'Nenhuma movimentação registrada'
+                  : `Nenhuma movimentação do tipo ${tipoFiltro.toLowerCase()}`
+                }
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Observação</TableHead>
+                  <TableHead>Usuário</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredMovimentacoes
+                  .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+                  .map((mov) => (
+                    <TableRow key={mov.id}>
+                      <TableCell>{new Date(mov.data).toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={mov.tipo === 'Entrada' ? 'default' : mov.tipo === 'Saída' ? 'destructive' : 'secondary'}
+                        >
+                          {mov.tipo}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {mov.tipo === 'Ajuste' ? mov.quantidade : mov.quantidade}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">{mov.observacao || '—'}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{mov.usuario}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
-      {/* Ações */}
-      <div className="flex justify-end space-x-2">
-        <Dialog open={isEntradaOpen} onOpenChange={setIsEntradaOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Entrada
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Registrar Entrada</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Quantidade</Label>
-                <Input
-                  type="number"
-                  value={quantidade}
-                  onChange={(e) => setQuantidade(parseInt(e.target.value) || 0)}
-                  min="1"
-                />
-              </div>
-              <div>
-                <Label>Observação</Label>
-                <Input
-                  value={observacao}
-                  onChange={(e) => setObservacao(e.target.value)}
-                  placeholder="Motivo da entrada"
-                />
-              </div>
-              <Button onClick={() => handleMovimentacao('Entrada')} className="w-full">
-                Registrar Entrada
+      {/* Dialog de Movimentação */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {tipoMovimentacao === 'Entrada' && 'Registrar Entrada'}
+              {tipoMovimentacao === 'Saída' && 'Registrar Saída'}
+              {tipoMovimentacao === 'Ajuste' && 'Ajustar Estoque'}
+            </DialogTitle>
+            <DialogDescription>
+              {tipoMovimentacao === 'Entrada' && 'Adicione unidades ao estoque'}
+              {tipoMovimentacao === 'Saída' && 'Remova unidades do estoque'}
+              {tipoMovimentacao === 'Ajuste' && 'Defina o novo total em estoque'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label>
+                {tipoMovimentacao === 'Ajuste' ? 'Novo estoque total' : 'Quantidade'}
+              </Label>
+              <Input
+                type="number"
+                value={movimentacao.quantidade}
+                onChange={(e) => setMovimentacao({
+                  ...movimentacao,
+                  quantidade: parseInt(e.target.value) || 0
+                })}
+                min="0"
+                max={tipoMovimentacao === 'Saída' ? produto.estoque : undefined}
+                placeholder={tipoMovimentacao === 'Ajuste' ? 'Novo total em estoque' : 'Quantidade'}
+              />
+              {tipoMovimentacao === 'Saída' && (
+                <p className="text-sm text-muted-foreground">
+                  Disponível: {produto.estoque} unidades
+                </p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label>Observação</Label>
+              <Textarea
+                value={movimentacao.observacao}
+                onChange={(e) => setMovimentacao({ ...movimentacao, observacao: e.target.value })}
+                placeholder="Motivo da movimentação..."
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1">
+                Cancelar
+              </Button>
+              <Button onClick={handleMovimentacao} className="flex-1">
+                {tipoMovimentacao === 'Entrada' && 'Registrar Entrada'}
+                {tipoMovimentacao === 'Saída' && 'Registrar Saída'}
+                {tipoMovimentacao === 'Ajuste' && 'Ajustar Estoque'}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isSaidaOpen} onOpenChange={setIsSaidaOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              <Minus className="mr-2 h-4 w-4" />
-              Saída
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Registrar Saída</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Quantidade</Label>
-                <Input
-                  type="number"
-                  value={quantidade}
-                  onChange={(e) => setQuantidade(parseInt(e.target.value) || 0)}
-                  min="1"
-                  max={produto.estoque}
-                />
-              </div>
-              <div>
-                <Label>Observação</Label>
-                <Input
-                  value={observacao}
-                  onChange={(e) => setObservacao(e.target.value)}
-                  placeholder="Motivo da saída"
-                />
-              </div>
-              <Button onClick={() => handleMovimentacao('Saída')} className="w-full">
-                Registrar Saída
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

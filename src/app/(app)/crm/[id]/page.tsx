@@ -1,37 +1,41 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, CheckCircle2, ChevronRight, FileText, XCircle } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
-import { mockLeads, Lead } from '../../../../lib/mock/crm';
-import { ChevronRight, ArrowLeft, FileText, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import type { EtapaNegocio, Negocio, StatusNegocio } from '../../../../lib/mock/negocios';
+import { useDemoData } from '@/src/lib/demo-context';
 
-// Componente Label simples
-function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <label className={`block text-sm font-medium text-gray-700 ${className}`}>{children}</label>;
-}
-
-const mockHistory = [
-  'Lead criado em 15/12/2025',
-  'Contato inicial realizado em 16/12/2025',
-  'Reunião agendada para 20/12/2025',
-  'Proposta enviada em 18/12/2025',
-];
+const timelineBase = ['Negócio criado', 'Contato realizado', 'Proposta enviada'];
 
 export default function LeadDetail() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const lead = mockLeads.find((l: Lead) => l.id === id);
+  const { negocios, setNegocios } = useDemoData();
+  const negocio = negocios.find((n: Negocio) => n.id === id);
+  const [notas, setNotas] = useState<string[]>([]);
+  const [notaNova, setNotaNova] = useState('');
 
-  if (!lead) {
+  const etapas: EtapaNegocio[] = ['Novo', 'Contato', 'Proposta', 'Negociação', 'Fechado'];
+
+  const timeline = useMemo(() => timelineBase, []);
+
+  if (!negocio) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Lead não encontrado</h1>
+          <h1 className="text-3xl font-semibold">Negócio não encontrado</h1>
         </div>
         <Button onClick={() => router.push('/crm')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -41,90 +45,188 @@ export default function LeadDetail() {
     );
   }
 
-  const getStatusColor = (status: Lead['status']) => {
+  const handleChangeEtapa = (novaEtapa: EtapaNegocio) => {
+    setNegocios(
+      negocios.map((n) => (n.id === negocio.id ? { ...n, etapa: novaEtapa, status: novaEtapa === 'Fechado' ? n.status : 'Ativo' } : n)),
+    );
+  };
+
+  const handleStatus = (status: StatusNegocio) => {
+    setNegocios(negocios.map((n) => (n.id === negocio.id ? { ...n, status, etapa: status === 'Ativo' ? n.etapa : 'Fechado' } : n)));
+  };
+
+  const addNota = () => {
+    if (!notaNova.trim()) return;
+    setNotas([notaNova.trim(), ...notas]);
+    setNotaNova('');
+  };
+
+  const getStatusColor = (status: StatusNegocio) => {
     switch (status) {
-      case 'Novo': return 'bg-blue-100 text-blue-800';
-      case 'Em contato': return 'bg-yellow-100 text-yellow-800';
-      case 'Qualificado': return 'bg-green-100 text-green-800';
-      case 'Perdido': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Ganho':
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+      case 'Perdido':
+        return 'bg-rose-50 text-rose-700 border border-rose-100';
+      default:
+        return 'bg-blue-50 text-blue-700 border border-blue-100';
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Breadcrumb */}
-      <div className="flex items-center space-x-2 text-sm text-gray-600">
-        <Link href="/dashboard" className="hover:text-gray-900">Dashboard</Link>
+      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+        <Link href="/dashboard" className="hover:text-foreground">
+          Dashboard
+        </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href="/crm" className="hover:text-gray-900">Negócios</Link>
+        <Link href="/crm" className="hover:text-foreground">
+          Negócios
+        </Link>
         <ChevronRight className="h-4 w-4" />
-        <span>{lead.empresa}</span>
+        <span>{negocio.codigo}</span>
       </div>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Detalhes do Lead</h1>
+        <h1 className="text-3xl font-semibold">Detalhe do Negócio</h1>
         <Button onClick={() => router.push('/crm')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
       </div>
 
-      {/* Dados do Lead */}
-      <Card>
+      {/* Resumo */}
+      <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle>Informações do Lead</CardTitle>
+          <CardTitle>Resumo</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium">Empresa</Label>
-              <p className="text-lg">{lead.empresa}</p>
+              <p className="text-lg text-foreground">{negocio.empresa}</p>
             </div>
             <div>
               <Label className="text-sm font-medium">Contato</Label>
-              <p className="text-lg">{lead.contato}</p>
+              <p className="text-lg text-foreground">{negocio.contato}</p>
             </div>
             <div>
-              <Label className="text-sm font-medium">Status</Label>
-              <div className="mt-1">
-                <Badge className={getStatusColor(lead.status)}>
-                  {lead.status}
-                </Badge>
-              </div>
+              <Label className="text-sm font-medium">Valor</Label>
+              <p className="text-lg font-semibold">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(negocio.valor)}
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Etapa</Label>
+              <Select value={negocio.etapa} onValueChange={(value: EtapaNegocio) => handleChangeEtapa(value)}>
+                <SelectTrigger className="w-full md:w-52">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {etapas.map((etapa) => (
+                    <SelectItem key={etapa} value={etapa}>
+                      {etapa}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="text-sm font-medium">Responsável</Label>
-              <p className="text-lg">{lead.responsavel}</p>
+              <p className="text-lg text-foreground">{negocio.responsavel}</p>
             </div>
+            <div className="space-y-1">
+              <Label className="text-sm font-medium">Status</Label>
+              <Badge className={getStatusColor(negocio.status)}>{negocio.status}</Badge>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="hover:bg-emerald-50"
+                  onClick={() => handleStatus('Ganho')}
+                >
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Ganho
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="hover:bg-rose-50"
+                  onClick={() => handleStatus('Perdido')}
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Perdido
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {negocio.tags?.map((tag) => (
+              <Badge key={tag} variant="outline">
+                {tag}
+              </Badge>
+            ))}
+            <Badge variant="secondary">Origem: {negocio.origem || '—'}</Badge>
+            <Badge variant="secondary">Funil: {negocio.funil}</Badge>
+            <Badge variant="secondary">Prioridade: {negocio.prioridade}</Badge>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => router.push(`/documentos/nova?negocioId=${negocio.id}`)}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Criar proposta
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Histórico */}
-      <Card>
+      {/* Timeline */}
+      <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle>Histórico</CardTitle>
+          <CardTitle>Timeline</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockHistory.map((item, index) => (
-              <div key={index} className="flex items-start space-x-3">
-                <Clock className="h-5 w-5 text-gray-400 mt-0.5" />
-                <p className="text-sm">{item}</p>
+        <CardContent className="space-y-3">
+          {timeline.map((item, index) => (
+            <div key={index} className="flex items-center gap-3 text-sm">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              <span>{item}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Notas */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle>Notas</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Adicionar nota</Label>
+            <Textarea
+              value={notaNova}
+              onChange={(e) => setNotaNova(e.target.value)}
+              placeholder="Ex.: Próximo passo, data de follow-up..."
+            />
+            <Button onClick={addNota} className="w-fit">
+              Salvar nota
+            </Button>
+          </div>
+          <Separator />
+          <div className="space-y-3">
+            {notas.length === 0 && <p className="text-sm text-muted-foreground">Sem notas registradas.</p>}
+            {notas.map((nota, index) => (
+              <div key={index} className="rounded-md border p-3 bg-white/70">
+                <p className="text-sm text-foreground">{nota}</p>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
-
-      {/* Ações */}
-      <div className="flex justify-end">
-        <Button onClick={() => router.push(`/documentos/nova?leadId=${lead.id}`)}>
-          <FileText className="mr-2 h-4 w-4" />
-          Criar Proposta
-        </Button>
-      </div>
     </div>
   );
 }

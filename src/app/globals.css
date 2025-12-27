@@ -122,4 +122,22 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1 {
+    @apply text-3xl font-semibold leading-tight tracking-tight;
+  }
+  h2 {
+    @apply text-xl font-semibold leading-snug;
+  }
+  p {
+    @apply leading-relaxed;
+  }
+  a {
+    @apply transition-colors duration-150;
+  }
+  a:hover {
+    @apply text-primary;
+  }
+  a:active {
+    @apply text-primary/80;
+  }
 }

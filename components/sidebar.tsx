@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   LifeBuoy,
   ShieldCheck,
+  Users,
 } from 'lucide-react';
 
 const links = [
@@ -26,8 +27,9 @@ const links = [
   { href: '/assistencias', label: 'Assistências', icon: LifeBuoy },
   { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
   { href: '/frota', label: 'Frota', icon: Truck },
-  { href: '/administrador', label: 'Administrador', icon: ShieldCheck },
-  { href: '/relatorios', label: 'Relatorios', icon: FileText },
+  { href: '/relatorios', label: 'Relatórios', icon: FileText },
+  { href: '/dep-pessoal', label: 'Dep. Pessoal', icon: Users },
+  { href: '/administrador', label: 'Configurações', icon: ShieldCheck },
 ];
 
 interface SidebarProps {
@@ -51,9 +53,7 @@ export default function Sidebar({ onLinkClick }: SidebarProps) {
                 <Link
                   href={link.href}
                   onClick={onLinkClick}
-                  className={`flex items-center p-4 hover:bg-gray-700 ${
-                    isActive ? 'bg-gray-700' : ''
-                  }`}
+                  className={`flex items-center p-4 hover:bg-gray-700 ${isActive ? 'bg-gray-700' : ''}`}
                 >
                   <link.icon className="mr-2" size={20} />
                   {link.label}
