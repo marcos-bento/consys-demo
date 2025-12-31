@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Compra, StatusCompra, TipoCompra } from '../../../../lib/mock/compras';
+import type { Compra, StatusCompra, TipoCompra } from '@/lib/mock/compras';
 
 const statusColor = (status: StatusCompra) => {
   switch (status) {

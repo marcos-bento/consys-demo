@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Save, Send, Trash2 } from 'lucide-react';
 
@@ -9,16 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 
-import type { ItemProposta, Proposta } from '../../../../lib/mock/comercial';
-import type { Documento } from '../../../../lib/mock/documentos';
-import { useDemoData } from '@/src/lib/demo-context';
+import type { ItemProposta, Proposta } from '@/lib/mock/comercial';
+import type { Documento } from '@/lib/mock/documentos';
+import { useDemoData } from '@/lib/demo-context';
 
-// Componente Label simples
 function Label({ children, className }: { children: React.ReactNode; className?: string }) {
   return <label className={`block text-sm font-medium text-gray-700 ${className}`}>{children}</label>;
 }
 
-export default function NovoDocumento() {
+function NovoDocumentoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const leadId = searchParams.get('leadId');
@@ -113,7 +112,6 @@ export default function NovoDocumento() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Form */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
@@ -183,7 +181,6 @@ export default function NovoDocumento() {
           </Card>
         </div>
 
-        {/* Resumo */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -225,5 +222,13 @@ export default function NovoDocumento() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NovoDocumento() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <NovoDocumentoContent />
+    </Suspense>
   );
 }

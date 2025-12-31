@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { EllipsisVertical, Plus, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { EtapaNegocio, Negocio, PrioridadeNegocio, StatusNegocio } from '../../../lib/mock/negocios';
+import type { EtapaNegocio, Negocio, PrioridadeNegocio, StatusNegocio } from '@/lib/mock/negocios';
 
 const funis = ['Vendas'];
 const etapas: EtapaNegocio[] = ['Novo', 'Contato', 'Proposta', 'Negociação', 'Fechado'];
@@ -46,6 +46,9 @@ export default function NegociosPage() {
   const [responsavelFilter, setResponsavelFilter] = useState<string>('Todos');
   const [prioridadeFilter, setPrioridadeFilter] = useState<PrioridadeNegocio | 'Todos'>('Todos');
   const [statusFilter, setStatusFilter] = useState<StatusNegocio | 'Todos'>('Todos');
+  const [hoveredEtapa, setHoveredEtapa] = useState<EtapaNegocio | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'funnel' | 'table'>('funnel');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [novoNegocio, setNovoNegocio] = useState({
     empresa: '',
@@ -99,6 +102,45 @@ export default function NegociosPage() {
     );
   };
 
+  const handleCardOpen = (id: string) => {
+    router.push(`/crm/${id}`);
+  };
+
+  const handleDragStart = (event: DragEvent<HTMLDivElement>, id: string) => {
+    event.dataTransfer.setData('text/plain', id);
+    event.dataTransfer.effectAllowed = 'move';
+    setDraggingId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    setHoveredEtapa(null);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>, etapa: EtapaNegocio) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    setHoveredEtapa(etapa);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>, etapa: EtapaNegocio) => {
+    event.preventDefault();
+    const cardId = draggingId || event.dataTransfer.getData('text/plain');
+    const dragged = negocios.find((n) => n.id === cardId);
+    if (cardId && dragged && dragged.etapa !== etapa) {
+      handleMoverEtapa(cardId, etapa);
+    }
+    setDraggingId(null);
+    setHoveredEtapa(null);
+  };
+
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>, id: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleCardOpen(id);
+    }
+  };
+
   const handleCriarNegocio = () => {
     if (!novoNegocio.empresa.trim()) return;
     const nextId = (negocios.length + 1).toString();
@@ -137,19 +179,15 @@ export default function NegociosPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-semibold">Negócios</h1>
-        <p className="text-muted-foreground">Organize oportunidades por funil e etapa</p>
-      </div>
-
+    <div className="space-y-6 lg:space-y-7 -mt-3 px-[20px] pt-[20px]">
       {/* Topbar */}
-      <Card className="shadow-sm">
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <Card className="shadow-sm border border-border/70 mt-[10px] py-2">
+        <CardContent className="py-2 px-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1 w-36">
+              <Label className="text-xs text-muted-foreground">Funil</Label>
               <Select value={funilSelecionado} onValueChange={setFunilSelecionado}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full" title="Filtra os negócios pelo funil ativo">
                   <SelectValue placeholder="Selecionar funil" />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,7 +198,10 @@ export default function NegociosPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <div className="relative w-full sm:w-72">
+            </div>
+            <div className="space-y-1 w-52">
+              <Label className="text-xs text-muted-foreground">Busca</Label>
+              <div className="relative w-full" title="Procure por empresa, contato ou código">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar empresa, contato ou código"
@@ -169,8 +210,11 @@ export default function NegociosPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+            </div>
+            <div className="space-y-1 w-40">
+              <Label className="text-xs text-muted-foreground">Responsável</Label>
               <Select value={responsavelFilter} onValueChange={setResponsavelFilter}>
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full" title="Filtra pelo responsável vinculado ao negócio">
                   <SelectValue placeholder="Responsável" />
                 </SelectTrigger>
                 <SelectContent>
@@ -182,19 +226,11 @@ export default function NegociosPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={prioridadeFilter} onValueChange={(value: PrioridadeNegocio | 'Todos') => setPrioridadeFilter(value)}>
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Prioridade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Todos">Prioridade</SelectItem>
-                  <SelectItem value="Alta">Alta</SelectItem>
-                  <SelectItem value="Média">Média</SelectItem>
-                  <SelectItem value="Baixa">Baixa</SelectItem>
-                </SelectContent>
-              </Select>
+            </div>
+            <div className="space-y-1 w-32">
+              <Label className="text-xs text-muted-foreground">Status</Label>
               <Select value={statusFilter} onValueChange={(value: StatusNegocio | 'Todos') => setStatusFilter(value)}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-full" title="Filtra negócios por status atual">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -205,9 +241,24 @@ export default function NegociosPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1 w-32">
+              <Label className="text-xs text-muted-foreground">Visão</Label>
+              <Select value={viewMode} onValueChange={(value: 'funnel' | 'table') => setViewMode(value)}>
+                <SelectTrigger className="w-full" title="Altere entre visualização em funil ou tabela">
+                  <SelectValue placeholder="Visão" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="funnel">Funil</SelectItem>
+                  <SelectItem value="table">Tabela</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button variant="outline" className="h-[42px]" title="Crie um filtro personalizado para os negócios">
+              Criar filtro dinâmico
+            </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="shadow-sm hover:shadow">
+                <Button className="shadow-sm hover:shadow h-[42px]">
                   <Plus className="mr-2 h-4 w-4" />
                   Novo negócio
                 </Button>
@@ -324,91 +375,152 @@ export default function NegociosPage() {
         </CardContent>
       </Card>
 
-      {/* Kanban */}
-      <div className="overflow-x-auto pb-2">
-        <div className="flex gap-4 min-w-max">
-          {negociosPorEtapa.map(({ etapa, itens, total }) => (
-            <div key={etapa} className="w-72 shrink-0 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold">{etapa}</h2>
-                  <Badge variant="secondary">{itens.length}</Badge>
-                </div>
-                <span className="text-xs text-muted-foreground">{formatCurrency(total)}</span>
-              </div>
-              <div className="space-y-3">
-                {itens.length === 0 && (
-                  <div className="rounded-md border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">
-                    Nenhum negócio nesta etapa
+      {viewMode === 'funnel' ? (
+        <div className="overflow-x-auto pb-4 -mx-1 sm:-mx-2">
+          <div className="flex gap-5 min-w-max px-1 sm:px-2">
+            {negociosPorEtapa.map(({ etapa, itens, total }) => {
+              const isActive = hoveredEtapa === etapa;
+              return (
+                <div
+                  key={etapa}
+                  className={`w-72 shrink-0 space-y-3 rounded-xl border px-3 pb-3 pt-[5px] shadow-sm transition-colors ring-1 ring-slate-300/80 ${
+                    isActive ? 'border-primary/60 bg-primary/5 ring-slate-400/90' : 'border-border/70 bg-white/70'
+                  }`}
+                  onDragOver={(event) => handleDragOver(event, etapa)}
+                  onDrop={(event) => handleDrop(event, etapa)}
+                  onDragLeave={() => setHoveredEtapa(null)}
+                >
+                  <div className="flex items-center justify-between pb-2 border-b border-dashed">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold">{etapa}</h2>
+                      <Badge variant="secondary">{itens.length}</Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{formatCurrency(total)}</span>
                   </div>
-                )}
-                {itens.map((negocio) => (
-                  <Card key={negocio.id} className="shadow-sm">
-                    <CardContent className="p-3 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-semibold text-foreground">{negocio.empresa}</p>
-                          <p className="text-sm text-muted-foreground">{negocio.contato}</p>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="hover:bg-primary/5">
-                              <EllipsisVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {etapas
-                              .filter((e) => e !== negocio.etapa)
-                              .map((e) => (
-                                <DropdownMenuItem key={e} onSelect={() => handleMoverEtapa(negocio.id, e)}>
-                                  Mover para {e}
-                                </DropdownMenuItem>
-                              ))}
-                            <DropdownMenuItem onSelect={() => handleStatus(negocio.id, 'Ganho')}>
-                              Marcar como ganho
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => handleStatus(negocio.id, 'Perdido')}>
-                              Marcar como perdido
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  <div className="space-y-3 min-h-[60vh]">
+                    {itens.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+                        Arraste um negócio para esta etapa
                       </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-semibold">{formatCurrency(negocio.valor)}</span>
-                        <Badge className={badgeByStatus[negocio.status]}>{negocio.status}</Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Resp.: {negocio.responsavel}</span>
-                        <span>{negocio.diasNoFunil}d</span>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <Badge variant="outline">Prioridade {negocio.prioridade}</Badge>
-                        {negocio.tags?.map((tag) => (
-                          <Badge key={tag} variant="secondary">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start hover:bg-primary/5"
-                        onClick={() => router.push(`/crm/${negocio.id}`)}
+                    )}
+                    {itens.map((negocio) => (
+                      <Card
+                        key={negocio.id}
+                        draggable
+                        onDragStart={(event) => handleDragStart(event, negocio.id)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => handleCardOpen(negocio.id)}
+                        onKeyDown={(event) => handleCardKeyDown(event, negocio.id)}
+                        tabIndex={0}
+                        role="button"
+                        className={`cursor-grab rounded-lg border border-border/60 shadow-sm transition hover:border-primary/40 hover:shadow-md active:cursor-grabbing ${
+                          draggingId === negocio.id ? 'opacity-80 ring-2 ring-primary/30' : ''
+                        }`}
                       >
-                        Ver detalhes
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
+                        <CardContent className="p-3 space-y-2.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold leading-tight text-foreground">{negocio.empresa}</p>
+                              <p className="text-xs text-muted-foreground">{negocio.contato}</p>
+                            </div>
+                            <div className="flex items-start gap-1">
+                              <Badge className={`${badgeByStatus[negocio.status]} text-[11px] px-2 py-0.5`}>
+                                {negocio.status}
+                              </Badge>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:bg-primary/5"
+                                    onClick={(event) => event.stopPropagation()}
+                                    onMouseDown={(event) => event.stopPropagation()}
+                                  >
+                                    <EllipsisVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {etapas
+                                    .filter((e) => e !== negocio.etapa)
+                                    .map((e) => (
+                                      <DropdownMenuItem key={e} onSelect={() => handleMoverEtapa(negocio.id, e)}>
+                                        Mover para {e}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  <DropdownMenuItem onSelect={() => handleStatus(negocio.id, 'Ganho')}>
+                                    Marcar como ganho
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => handleStatus(negocio.id, 'Perdido')}>
+                                    Marcar como perdido
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-semibold">{formatCurrency(negocio.valor)}</span>
+                            <span className="text-xs text-muted-foreground">Resp.: {negocio.responsavel}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{negocio.diasNoFunil}d no funil</span>
+                            <Badge variant="outline" className="px-2 py-0 text-[11px]">
+                              Prioridade {negocio.prioridade}
+                            </Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border/70 bg-white shadow-sm">
+          <table className="min-w-full text-sm">
+            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 text-left">Código</th>
+                <th className="px-4 py-3 text-left">Empresa</th>
+                <th className="px-4 py-3 text-left">Contato</th>
+                <th className="px-4 py-3 text-left">Responsável</th>
+                <th className="px-4 py-3 text-left">Etapa</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {negociosFiltrados.map((negocio) => (
+                <tr
+                  key={negocio.id}
+                  className="border-t border-border/80 hover:bg-muted/40 cursor-pointer"
+                  onClick={() => handleCardOpen(negocio.id)}
+                >
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{negocio.codigo}</td>
+                  <td className="px-4 py-3 font-medium">{negocio.empresa}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{negocio.contato}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{negocio.responsavel}</td>
+                  <td className="px-4 py-3">{negocio.etapa}</td>
+                  <td className="px-4 py-3">
+                    <Badge className={`${badgeByStatus[negocio.status]} text-[11px] px-2 py-0.5`}>{negocio.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-right font-semibold">{formatCurrency(negocio.valor)}</td>
+                </tr>
+              ))}
+              {negociosFiltrados.length === 0 && (
+                <tr>
+                  <td className="px-4 py-4 text-center text-muted-foreground" colSpan={7}>
+                    Nenhum negócio encontrado com os filtros atuais.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

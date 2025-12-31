@@ -1,0 +1,149 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+enum StatusCandidato {
+  Novo
+  Triagem
+  Entrevista
+  Teste
+  Aprovado
+  Reprovado
+}
+
+enum StatusFerias {
+  Planejada
+  Em_gozo
+  Finalizada
+  Cancelada
+}
+
+enum StatusColaborador {
+  Ativo
+  Inativo
+  Ferias
+  Licenca
+}
+
+enum TipoArquivoPonto {
+  CSV
+  XLSX
+}
+
+model Colaborador {
+  id           String       @id @default(uuid())
+  nome         String
+  cargo        String
+  dataAdmissao DateTime
+  valorHora    Decimal      @db.Decimal(10, 2)
+  jornadaDiaria Int
+  status       StatusColaborador
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  ferias          Ferias[]
+  registrosPonto  RegistroPonto[]
+  importacoes     ImportacaoPonto[]
+  candidatos      Candidato[]     @relation("ResponsavelCandidato")
+  notasResponsavel NotaCandidato[] @relation("ResponsavelNota")
+}
+
+model Candidato {
+  id               String           @id @default(uuid())
+  nome             String
+  vaga             String
+  telefone         String
+  email            String
+  cidade           String
+  pretensaoSalarial Decimal?
+  observacoes      String?
+  curriculoUrl     String?
+  status           StatusCandidato
+  responsavelId    String
+  dataInscricao    DateTime
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  responsavel Colaborador @relation("ResponsavelCandidato", fields: [responsavelId], references: [id])
+  notas       NotaCandidato[]
+}
+
+model NotaCandidato {
+  id           String    @id @default(uuid())
+  candidatoId  String
+  texto        String
+  data         DateTime
+  responsavelId String
+
+  candidato   Candidato   @relation(fields: [candidatoId], references: [id])
+  responsavel Colaborador @relation("ResponsavelNota", fields: [responsavelId], references: [id])
+}
+
+model Ferias {
+  id                      String     @id @default(uuid())
+  colaboradorId           String
+  dataInicio              DateTime
+  dias                    Int
+  periodoAquisitivoInicio DateTime
+  periodoAquisitivoFim    DateTime
+  periodoConcessivoInicio DateTime
+  periodoConcessivoFim    DateTime
+  dataLimiteGozo          DateTime
+  dataRetorno             DateTime
+  abonoPecuniario         Boolean
+  decimoTerceiro          Boolean
+  status                  StatusFerias
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+
+  colaborador Colaborador @relation(fields: [colaboradorId], references: [id])
+}
+
+model RegistroPonto {
+  id              String    @id @default(uuid())
+  colaboradorId   String
+  importacaoId    String?
+  data            DateTime
+  entrada         String?
+  saida           String?
+  intervalo       Int?
+  totalHoras      Decimal?  @db.Decimal(5, 2)
+  horasExtras     Decimal?  @db.Decimal(5, 2)
+  observacoes     String?
+
+  colaborador Colaborador     @relation(fields: [colaboradorId], references: [id])
+  importacao  ImportacaoPonto? @relation(fields: [importacaoId], references: [id])
+}
+
+model ImportacaoPonto {
+  id                     String          @id @default(uuid())
+  colaboradorId          String
+  arquivoNome            String
+  tipoArquivo            TipoArquivoPonto
+  periodoInicio          DateTime
+  periodoFim             DateTime
+  jornadaPadrao          Int
+  intervaloPadrao        Int
+  bancoHoras             Boolean
+  totalHorasTrabalhadas  Decimal @db.Decimal(10, 2)
+  totalHorasExtras       Decimal @db.Decimal(10, 2)
+  totalFaltas            Int
+  createdAt              DateTime @default(now())
+
+  colaborador Colaborador  @relation(fields: [colaboradorId], references: [id])
+  registros    RegistroPonto[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

@@ -1,60 +1,72 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Calendar, Plus, Eye, FileText, Calculator } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Calculator, Calendar, Eye, FileText, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import type { Ferias, StatusFerias } from '../../../../lib/mock/dep-pessoal';
+import type { Colaborador, Ferias, StatusFerias } from '@/lib/mock/dep-pessoal';
 import { useDemoData } from '@/src/lib/demo-context';
+
+type StatusFeriasUI = StatusFerias | 'Solicitado' | 'Aprovado' | 'Reprovado' | 'Cancelado';
+
+type FeriasUI = Omit<Ferias, 'status'> & {
+  status: StatusFeriasUI;
+  dataFim?: string;
+  diasSolicitados?: number;
+  dataSolicitacao?: string;
+  observacoes?: string;
+};
 
 export function FeriasTab() {
   const router = useRouter();
   const { ferias, setFerias, colaboradores } = useDemoData();
+
+  const feriasUI: FeriasUI[] = ferias as unknown as FeriasUI[];
+  const setFeriasUI = setFerias as unknown as React.Dispatch<React.SetStateAction<FeriasUI[]>>;
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
   const [anoFilter, setAnoFilter] = useState<string>('Todos');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Estado para nova solicitação de férias
   const [newFerias, setNewFerias] = useState({
     colaboradorId: '',
     dataInicio: '',
     dataFim: '',
     diasSolicitados: '',
     observacoes: '',
-    status: 'Solicitado' as StatusFerias,
+    status: 'Solicitado' as StatusFeriasUI,
   });
 
-  // Filtros aplicados
   const filteredFerias = useMemo(() => {
-    return ferias.filter((feria) => {
-      const colaborador = colaboradores.find(c => c.id === feria.colaboradorId);
+    return feriasUI.filter((feria) => {
+      const colaborador = (colaboradores as Colaborador[]).find(c => c.id === feria.colaboradorId);
+      const dataFim = feria.dataFim ?? feria.dataRetorno ?? '';
       const matchesSearch =
         (colaborador?.nome.toLowerCase().includes(search.toLowerCase()) ?? false) ||
         feria.dataInicio.includes(search) ||
-        feria.dataFim.includes(search);
+        dataFim.includes(search);
 
       const matchesStatus = statusFilter === 'Todos' || feria.status === statusFilter;
       const matchesAno = anoFilter === 'Todos' || new Date(feria.dataInicio).getFullYear().toString() === anoFilter;
 
       return matchesSearch && matchesStatus && matchesAno;
     });
-  }, [ferias, search, statusFilter, anoFilter, colaboradores]);
+  }, [feriasUI, search, statusFilter, anoFilter, colaboradores]);
 
-  // Anos únicos para o filtro
   const anosUnicos = useMemo(() => {
-    const anos = [...new Set(ferias.map(f => new Date(f.dataInicio).getFullYear()))];
-    return anos.sort((a, b) => b - a); // Mais recente primeiro
-  }, [ferias]);
+    const anos = [...new Set(feriasUI.map(f => new Date(f.dataInicio).getFullYear()))];
+    return anos.sort((a, b) => b - a);
+  }, [feriasUI]);
 
   const handleAddFerias = () => {
     if (!newFerias.colaboradorId || !newFerias.dataInicio || !newFerias.dataFim) return;
@@ -63,16 +75,25 @@ export function FeriasTab() {
     const dataFim = new Date(newFerias.dataFim);
     const diasSolicitados = Math.ceil((dataFim.getTime() - dataInicio.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    const ferias: Ferias = {
+    const ferias = {
       id: Date.now().toString(),
       ...newFerias,
       diasSolicitados,
       dataSolicitacao: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
+      dias: diasSolicitados,
+      periodoAquisitivoInicio: newFerias.dataInicio,
+      periodoAquisitivoFim: newFerias.dataFim,
+      periodoConcessivoInicio: newFerias.dataInicio,
+      periodoConcessivoFim: newFerias.dataFim,
+      dataLimiteGozo: newFerias.dataFim,
+      dataRetorno: newFerias.dataFim,
+      abonoPecuniario: false,
+      decimoTerceiro: false,
+    } as FeriasUI;
 
-    setFerias(prev => [...prev, ferias]);
+    setFeriasUI(prev => [...prev, ferias]);
     setNewFerias({
       colaboradorId: '',
       dataInicio: '',
@@ -84,7 +105,7 @@ export function FeriasTab() {
     setIsDialogOpen(false);
   };
 
-  const getStatusBadgeColor = (status: StatusFerias) => {
+  const getStatusBadgeColor = (status: StatusFeriasUI) => {
     switch (status) {
       case 'Solicitado':
         return 'bg-blue-100 text-blue-800';
@@ -93,30 +114,31 @@ export function FeriasTab() {
       case 'Reprovado':
         return 'bg-red-100 text-red-800';
       case 'Cancelado':
+      case 'Cancelada':
         return 'bg-gray-100 text-gray-800';
+      case 'Em gozo':
+        return 'bg-amber-100 text-amber-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
   const calcularDiasDisponiveis = (colaboradorId: string) => {
-    const colaborador = colaboradores.find(c => c.id === colaboradorId);
+    const colaborador = (colaboradores as Colaborador[]).find(c => c.id === colaboradorId);
     if (!colaborador) return 0;
 
-    // Simulação: 30 dias por ano - dias já utilizados
-    const feriasAprovadas = ferias.filter(f =>
+    const feriasAprovadas = feriasUI.filter(f =>
       f.colaboradorId === colaboradorId &&
       f.status === 'Aprovado' &&
       new Date(f.dataInicio).getFullYear() === new Date().getFullYear()
     );
 
-    const diasUtilizados = feriasAprovadas.reduce((total, f) => total + f.diasSolicitados, 0);
+    const diasUtilizados = feriasAprovadas.reduce((total, f) => total + (f.diasSolicitados ?? f.dias ?? 0), 0);
     return 30 - diasUtilizados;
   };
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-sm">
           <CardContent className="p-6">
@@ -124,7 +146,7 @@ export function FeriasTab() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Solicitações Pendentes</p>
                 <p className="text-2xl font-bold">
-                  {ferias.filter(f => f.status === 'Solicitado').length}
+                  {feriasUI.filter(f => f.status === 'Solicitado').length}
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-blue-500" />
@@ -138,7 +160,7 @@ export function FeriasTab() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Férias Aprovadas</p>
                 <p className="text-2xl font-bold">
-                  {ferias.filter(f => f.status === 'Aprovado').length}
+                  {feriasUI.filter(f => f.status === 'Aprovado').length}
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-green-500" />
@@ -152,7 +174,9 @@ export function FeriasTab() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total de Dias Solicitados</p>
                 <p className="text-2xl font-bold">
-                  {ferias.filter(f => f.status === 'Aprovado').reduce((total, f) => total + f.diasSolicitados, 0)}
+                  {feriasUI
+                    .filter(f => f.status === 'Aprovado')
+                    .reduce((total, f) => total + (f.diasSolicitados ?? f.dias ?? 0), 0)}
                 </p>
               </div>
               <Calculator className="h-8 w-8 text-purple-500" />
@@ -161,16 +185,13 @@ export function FeriasTab() {
         </Card>
       </div>
 
-      {/* Filters and Actions */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle>Solicitações de Férias</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Filters Row */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              {/* Search */}
               <div className="relative flex-1 max-w-sm">
                 <Input
                   placeholder="Buscar por colaborador..."
@@ -179,7 +200,6 @@ export function FeriasTab() {
                 />
               </div>
 
-              {/* Status Filter */}
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Status" />
@@ -193,7 +213,6 @@ export function FeriasTab() {
                 </SelectContent>
               </Select>
 
-              {/* Ano Filter */}
               <Select value={anoFilter} onValueChange={setAnoFilter}>
                 <SelectTrigger className="w-full sm:w-32">
                   <SelectValue placeholder="Ano" />
@@ -209,7 +228,6 @@ export function FeriasTab() {
               </Select>
             </div>
 
-            {/* New Vacation Request Button */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="shadow-sm">
@@ -301,7 +319,6 @@ export function FeriasTab() {
             </Dialog>
           </div>
 
-          {/* Table */}
           {filteredFerias.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p className="text-sm">Nenhuma solicitação encontrada</p>
@@ -320,7 +337,11 @@ export function FeriasTab() {
               </TableHeader>
               <TableBody>
                 {filteredFerias.map((feria) => {
-                  const colaborador = colaboradores.find(c => c.id === feria.colaboradorId);
+                  const colaborador = (colaboradores as Colaborador[]).find(c => c.id === feria.colaboradorId);
+                  const dataFim = feria.dataFim ?? feria.dataRetorno ?? feria.dataInicio;
+                  const dias = feria.diasSolicitados ?? feria.dias ?? 0;
+                  const dataSolicitacao = feria.dataSolicitacao ?? feria.createdAt ?? feria.dataInicio;
+
                   return (
                     <TableRow key={feria.id} className="hover:bg-muted/30">
                       <TableCell className="font-medium">
@@ -330,16 +351,16 @@ export function FeriasTab() {
                       <TableCell>
                         <div className="text-sm">
                           <div>{new Date(feria.dataInicio).toLocaleDateString('pt-BR')}</div>
-                          <div className="text-muted-foreground">até {new Date(feria.dataFim).toLocaleDateString('pt-BR')}</div>
+                          <div className="text-muted-foreground">até {new Date(dataFim).toLocaleDateString('pt-BR')}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{feria.diasSolicitados} dias</TableCell>
+                      <TableCell>{dias} dias</TableCell>
                       <TableCell>
                         <Badge className={getStatusBadgeColor(feria.status)}>
                           {feria.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{new Date(feria.dataSolicitacao).toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell>{new Date(dataSolicitacao).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-2">
                           <Button

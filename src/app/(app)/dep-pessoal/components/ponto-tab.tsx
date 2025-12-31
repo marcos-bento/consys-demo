@@ -13,12 +13,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { RegistroPonto, ImportacaoPonto, StatusImportacao } from '../../../../lib/mock/dep-pessoal';
+import type { RegistroPonto } from '@/lib/mock/dep-pessoal';
 import { useDemoData } from '@/src/lib/demo-context';
+
+type StatusImportacao = 'Processando' | 'Concluido' | 'Erro';
+
+type ImportacaoPontoUI = {
+  id: string;
+  colaboradorId: string;
+  mes: string;
+  ano: string;
+  arquivo: string;
+  observacoes: string;
+  status: StatusImportacao;
+  dataImportacao: string;
+  registrosProcessados: number;
+  horasExtrasCalculadas: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type RegistroPontoUI = RegistroPonto & {
+  horasTrabalhadas?: number;
+  horasExtras?: number;
+  importacaoId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 export function PontoTab() {
   const router = useRouter();
-  const { registrosPonto, setRegistrosPonto, importacoesPonto, setImportacoesPonto, colaboradores } = useDemoData();
+  const {
+    registrosPonto,
+    setRegistrosPonto,
+    importacoesPonto,
+    setImportacoesPonto,
+    colaboradores,
+  } = useDemoData();
+  const registrosPontoUI = registrosPonto as unknown as RegistroPontoUI[];
+  const setRegistrosPontoUI = setRegistrosPonto as unknown as React.Dispatch<
+    React.SetStateAction<RegistroPontoUI[]>
+  >;
+  const importacoesPontoUI = importacoesPonto as unknown as ImportacaoPontoUI[];
+  const setImportacoesPontoUI = setImportacoesPonto as unknown as React.Dispatch<
+    React.SetStateAction<ImportacaoPontoUI[]>
+  >;
   const [search, setSearch] = useState('');
   const [mesFilter, setMesFilter] = useState<string>('Todos');
   const [anoFilter, setAnoFilter] = useState<string>(new Date().getFullYear().toString());
@@ -36,7 +75,7 @@ export function PontoTab() {
 
   // Filtros aplicados
   const filteredRegistros = useMemo(() => {
-    return registrosPonto.filter((registro) => {
+    return registrosPontoUI.filter((registro) => {
       const colaborador = colaboradores.find(c => c.id === registro.colaboradorId);
       const matchesSearch =
         (colaborador?.nome.toLowerCase().includes(search.toLowerCase()) ?? false) ||
@@ -47,7 +86,7 @@ export function PontoTab() {
 
       return matchesSearch && matchesMes && matchesAno;
     });
-  }, [registrosPonto, search, mesFilter, anoFilter, colaboradores]);
+  }, [registrosPontoUI, search, mesFilter, anoFilter, colaboradores]);
 
   // Meses e anos únicos para filtros
   const meses = [
@@ -66,28 +105,27 @@ export function PontoTab() {
   ];
 
   const anosUnicos = useMemo(() => {
-    const anos = [...new Set(registrosPonto.map(r => new Date(r.data).getFullYear()))];
+    const anos = [...new Set(registrosPontoUI.map(r => new Date(r.data).getFullYear()))];
     return anos.sort((a, b) => b - a);
-  }, [registrosPonto]);
+  }, [registrosPontoUI]);
 
   const handleImportPonto = () => {
     if (!newImportacao.colaboradorId || !newImportacao.mes || !newImportacao.ano) return;
 
-    // Simular processamento da importação
-    const importacao: ImportacaoPonto = {
+    const importacao: ImportacaoPontoUI = {
       id: Date.now().toString(),
       ...newImportacao,
       dataImportacao: new Date().toISOString().split('T')[0],
-      registrosProcessados: Math.floor(Math.random() * 30) + 1, // Simulação
-      horasExtrasCalculadas: Math.floor(Math.random() * 20), // Simulação
+      registrosProcessados: Math.floor(Math.random() * 30) + 1,
+      horasExtrasCalculadas: Math.floor(Math.random() * 20),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    setImportacoesPonto(prev => [...prev, importacao]);
+    setImportacoesPontoUI(prev => [...prev, importacao]);
 
     // Simular geração de registros de ponto baseados na importação
-    const registrosGerados: RegistroPonto[] = [];
+    const registrosGerados: RegistroPontoUI[] = [];
     const diasNoMes = new Date(parseInt(newImportacao.ano), parseInt(newImportacao.mes), 0).getDate();
 
     for (let dia = 1; dia <= diasNoMes; dia++) {
@@ -116,7 +154,7 @@ export function PontoTab() {
       }
     }
 
-    setRegistrosPonto(prev => [...prev, ...registrosGerados]);
+    setRegistrosPontoUI(prev => [...prev, ...registrosGerados]);
 
     setNewImportacao({
       colaboradorId: '',
@@ -145,8 +183,8 @@ export function PontoTab() {
   const calcularTotais = () => {
     const totais = filteredRegistros.reduce(
       (acc, registro) => ({
-        horasTrabalhadas: acc.horasTrabalhadas + registro.horasTrabalhadas,
-        horasExtras: acc.horasExtras + registro.horasExtras,
+        horasTrabalhadas: acc.horasTrabalhadas + (registro.horasTrabalhadas ?? 0),
+        horasExtras: acc.horasExtras + (registro.horasExtras ?? 0),
       }),
       { horasTrabalhadas: 0, horasExtras: 0 }
     );
@@ -218,7 +256,7 @@ export function PontoTab() {
           <CardTitle>Histórico de Importações</CardTitle>
         </CardHeader>
         <CardContent>
-          {importacoesPonto.length === 0 ? (
+          {importacoesPontoUI.length === 0 ? (
             <div className="text-center py-4 text-muted-foreground">
               <p className="text-sm">Nenhuma importação realizada</p>
             </div>
@@ -236,7 +274,7 @@ export function PontoTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {importacoesPonto.slice(-5).reverse().map((importacao) => {
+                {importacoesPontoUI.slice(-5).reverse().map((importacao) => {
                   const colaborador = colaboradores.find(c => c.id === importacao.colaboradorId);
                   return (
                     <TableRow key={importacao.id} className="hover:bg-muted/30">
@@ -446,8 +484,8 @@ export function PontoTab() {
                       <TableCell>{registro.saida}</TableCell>
                       <TableCell>{registro.horasTrabalhadas}h</TableCell>
                       <TableCell>
-                        <span className={registro.horasExtras > 0 ? 'text-green-600 font-medium' : ''}>
-                          {registro.horasExtras}h
+                        <span className={(registro.horasExtras ?? 0) > 0 ? 'text-green-600 font-medium' : ''}>
+                          {(registro.horasExtras ?? 0)}h
                         </span>
                       </TableCell>
                       <TableCell className="text-right">

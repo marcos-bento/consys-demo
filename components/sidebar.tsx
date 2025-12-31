@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import {
   Home,
   Banknote,
@@ -15,6 +16,8 @@ import {
   LifeBuoy,
   ShieldCheck,
   Users,
+  ChevronFirst,
+  ChevronLast,
 } from 'lucide-react';
 
 const links = [
@@ -38,11 +41,26 @@ interface SidebarProps {
 
 export default function Sidebar({ onLinkClick }: SidebarProps) {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="w-64 min-h-full bg-blue-900 text-white flex flex-col">
-      <div className="p-4">
-        <h1 className="text-xl font-bold">Con'SYS</h1>
+    <div
+      className={`min-h-full bg-blue-900 text-white flex flex-col transition-all duration-200 ${
+        collapsed ? 'w-16' : 'w-64'
+      }`}
+    >
+      <div className="flex items-center justify-between p-4">
+        <h1 className={`text-xl font-bold truncate transition-all ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+          Con'SYS
+        </h1>
+        <button
+          type="button"
+          aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+          onClick={() => setCollapsed((prev) => !prev)}
+          className="text-white hover:bg-blue-800 rounded-md p-2 transition-colors"
+        >
+          {collapsed ? <ChevronLast size={18} /> : <ChevronFirst size={18} />}
+        </button>
       </div>
       <nav className="flex-1">
         <ul>
@@ -53,10 +71,14 @@ export default function Sidebar({ onLinkClick }: SidebarProps) {
                 <Link
                   href={link.href}
                   onClick={onLinkClick}
-                  className={`flex items-center p-4 hover:bg-gray-700 ${isActive ? 'bg-gray-700' : ''}`}
+                  className={`flex items-center gap-3 p-4 hover:bg-gray-700 transition-colors ${
+                    isActive ? 'bg-gray-700' : ''
+                  } ${collapsed ? 'justify-center' : ''}`}
                 >
-                  <link.icon className="mr-2" size={20} />
-                  {link.label}
+                  <link.icon size={20} />
+                  <span className={`whitespace-nowrap transition-opacity ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+                    {link.label}
+                  </span>
                 </Link>
               </li>
             );

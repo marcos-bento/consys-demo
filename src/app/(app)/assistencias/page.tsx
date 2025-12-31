@@ -16,7 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Assistencia } from '../../../lib/mock/assistencias';
+import type { Assistencia } from '@/lib/mock/assistencias';
 
 import AssistenciasKanban from './components/kanban';
 import AssistenciasTable from './components/table';

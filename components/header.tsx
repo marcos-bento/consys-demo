@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, Search, User } from 'lucide-react';
 
@@ -46,10 +46,27 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const { resetDemo } = useDemoData();
   const title = titles[pathname] || "Con'SYS";
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [username, setUsername] = useState('Usuário');
 
   const handleLogout = () => {
     router.push('/login');
   };
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const resMe = await fetch('/api/users/me', { cache: 'no-store', credentials: 'include' });
+        if (!resMe.ok) return;
+        const me = await resMe.json();
+        if (me?.username) {
+          setUsername(me.username);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar usuário', error);
+      }
+    };
+    loadUser();
+  }, []);
 
   const handleConfirmReset = () => {
     resetDemo();
@@ -74,7 +91,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center space-x-2">
               <User size={20} />
-              <span>Usuário</span>
+              <span>{username}</span>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem

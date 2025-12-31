@@ -42,7 +42,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-import type { Assistencia, HistoricoAssistencia, AnexoAssistencia } from '../../../../lib/mock/assistencias';
+import type { Assistencia, HistoricoAssistencia, AnexoAssistencia } from '@/lib/mock/assistencias';
 import { useDemoData } from '@/src/lib/demo-context';
 
 export default function AssistenciaDetail() {

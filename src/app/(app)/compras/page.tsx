@@ -40,7 +40,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Compra, ItemCompra, StatusCompra, TipoCompra } from '../../../lib/mock/compras';
+import type { Compra, ItemCompra, StatusCompra, TipoCompra } from '@/lib/mock/compras';
 
 const statusList: StatusCompra[] = ['Requisição', 'Cotação', 'Pedido', 'Recebido', 'Cancelado'];
 

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Lancamento } from '../../../lib/mock/financeiro';
+import type { Lancamento } from '@/lib/mock/financeiro';
 import { useDemoData } from '@/src/lib/demo-context';
 
 export default function Financeiro() {

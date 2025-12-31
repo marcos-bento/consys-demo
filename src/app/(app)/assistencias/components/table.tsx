@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import type { Assistencia } from '../../../../lib/mock/assistencias';
+import type { Assistencia } from '@/lib/mock/assistencias';
 
 interface AssistenciasTableProps {
   assistencias: Assistencia[];

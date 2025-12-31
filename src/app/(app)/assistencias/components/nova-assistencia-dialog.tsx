@@ -32,7 +32,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Assistencia } from '../../../../lib/mock/assistencias';
+import type { Assistencia } from '@/lib/mock/assistencias';
 
 interface NovaAssistenciaDialogProps {
   open: boolean;

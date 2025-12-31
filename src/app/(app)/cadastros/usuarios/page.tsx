@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, Edit, UserX, Plus, Search } from 'lucide-react';
+import { Eye, Search, Plus } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -24,103 +22,104 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useDemoData } from '@/src/lib/demo-context';
-import type { Usuario, StatusCadastro } from '../../../lib/mock/cadastros';
+import type { Prisma } from '@/generated/prisma/client';
 
-const statusList: StatusCadastro[] = ['Ativo', 'Inativo'];
+type DbUser = Prisma.UserGetPayload<{ select: { id: true; username: true; role: true; createdAt: true } }>;
 
 export default function UsuariosPage() {
   const router = useRouter();
-  const { usuarios, setUsuarios } = useDemoData();
+  const [usuarios, setUsuarios] = useState<DbUser[]>([]);
   const [search, setSearch] = useState('');
   const [perfilFilter, setPerfilFilter] = useState<string>('Todos');
-  const [statusFilter, setStatusFilter] = useState<StatusCadastro | 'Todos'>('Todos');
+  const [loading, setLoading] = useState(true);
+  const [novoUsuario, setNovoUsuario] = useState({ username: '', password: '', role: 'Admin' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [novo, setNovo] = useState({
-    nome: '',
-    email: '',
-    perfil: 'Comercial' as Usuario['perfil'],
-  });
 
-  const perfis = useMemo(() => Array.from(new Set(usuarios.map((u) => u.perfil))), [usuarios]);
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const res = await fetch('/api/users');
+        if (!res.ok) return;
+        const data = await res.json();
+        setUsuarios(data);
+      } catch (error) {
+        console.error('Erro ao buscar usuários', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  const perfis = useMemo(() => Array.from(new Set(usuarios.map((u) => u.role || ''))).filter(Boolean), [usuarios]);
 
   const usuariosFiltrados = useMemo(() => {
     return usuarios.filter((usuario) => {
       const matchesSearch =
-        usuario.nome.toLowerCase().includes(search.toLowerCase()) ||
-        usuario.email.toLowerCase().includes(search.toLowerCase());
+        usuario.username.toLowerCase().includes(search.toLowerCase()) ||
+        (usuario.role?.toLowerCase() || '').includes(search.toLowerCase());
 
-      const matchesPerfil = perfilFilter === 'Todos' || usuario.perfil === perfilFilter;
-      const matchesStatus = statusFilter === 'Todos' || usuario.status === statusFilter;
+      const matchesPerfil = perfilFilter === 'Todos' || usuario.role === perfilFilter;
 
-      return matchesSearch && matchesPerfil && matchesStatus;
+      return matchesSearch && matchesPerfil;
     });
-  }, [usuarios, search, perfilFilter, statusFilter]);
+  }, [usuarios, search, perfilFilter]);
 
-  const statusColor = (status: StatusCadastro) => {
-    switch (status) {
-      case 'Ativo':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
-      case 'Inativo':
-        return 'bg-rose-50 text-rose-700 border border-rose-100';
-      default:
-        return 'bg-slate-50 text-slate-700 border border-slate-200';
+  const handleCriarUsuario = async () => {
+    if (!novoUsuario.username.trim() || !novoUsuario.password.trim()) {
+      setError('Preencha username e senha.');
+      return;
     }
-  };
-
-  const handleInativar = (usuario: Usuario) => {
-    if (usuario.status === 'Inativo') return;
-    setUsuarios(
-      usuarios.map((u) =>
-        u.id === usuario.id ? { ...u, status: 'Inativo' } : u,
-      ),
-    );
-  };
-
-  const handleCreate = () => {
-    if (!novo.nome.trim() || !novo.email.trim()) return;
-
-    const nextId = (usuarios.length + 1).toString();
-    const hoje = new Date().toISOString().split('T')[0];
-    const novoUsuario: Usuario = {
-      id: nextId,
-      nome: novo.nome,
-      email: novo.email,
-      perfil: novo.perfil,
-      status: 'Ativo',
-      dataCriacao: hoje,
-    };
-    setUsuarios([...usuarios, novoUsuario]);
-    setIsDialogOpen(false);
-    setNovo({
-      nome: '',
-      email: '',
-      perfil: 'Comercial',
-    });
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novoUsuario),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Não foi possível criar o usuário.');
+        return;
+      }
+      const created: DbUser = await res.json();
+      setUsuarios((prev) => [...prev, created]);
+      setNovoUsuario({ username: '', password: '', role: 'Admin' });
+    } catch (e) {
+      console.error('Erro ao salvar usuário', e);
+      setError('Erro ao salvar usuário.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="space-y-8">
       <div className="space-y-1">
         <h1 className="text-3xl font-semibold">Usuários</h1>
-        <p className="text-muted-foreground">Gerencie usuários e suas permissões no sistema.</p>
+        <p className="text-muted-foreground">Gerencie usuários diretamente da base de dados.</p>
       </div>
 
-      {/* Topbar */}
+      {/* Filtros */}
       <Card className="shadow-sm">
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <CardContent className="pt-4 space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:w-80">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome ou e-mail"
+                placeholder="Buscar por username ou perfil"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
               <Select value={perfilFilter} onValueChange={setPerfilFilter}>
                 <SelectTrigger className="w-44">
                   <SelectValue placeholder="Perfil" />
@@ -134,71 +133,61 @@ export default function UsuariosPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={statusFilter} onValueChange={(value: StatusCadastro | 'Todos') => setStatusFilter(value)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Todos">Todos</SelectItem>
-                  {statusList.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="shadow-sm hover:shadow">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Novo usuário
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Novo usuário</DialogTitle>
-                  <DialogDescription>Registre um novo usuário no sistema.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <Label>Nome *</Label>
-                    <Input
-                      value={novo.nome}
-                      onChange={(e) => setNovo({ ...novo, nome: e.target.value })}
-                      placeholder="Nome completo"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>E-mail *</Label>
-                    <Input
-                      type="email"
-                      value={novo.email}
-                      onChange={(e) => setNovo({ ...novo, email: e.target.value })}
-                      placeholder="email@exemplo.com"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Perfil</Label>
-                    <Select value={novo.perfil} onValueChange={(value: Usuario['perfil']) => setNovo({ ...novo, perfil: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="Comercial">Comercial</SelectItem>
-                        <SelectItem value="Financeiro">Financeiro</SelectItem>
-                        <SelectItem value="Operacional">Operacional</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <Button onClick={handleCreate} className="w-full">
-                    Salvar usuário
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="shadow-sm hover:shadow">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Novo usuário
                   </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Novo usuário</DialogTitle>
+                    <DialogDescription>Registre um novo usuário no sistema.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <Label>Username *</Label>
+                      <Input
+                        placeholder="nome.sobrenome"
+                        value={novoUsuario.username}
+                        onChange={(e) => setNovoUsuario((prev) => ({ ...prev, username: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Senha *</Label>
+                      <Input
+                        type="password"
+                        placeholder="••••••"
+                        value={novoUsuario.password}
+                        onChange={(e) => setNovoUsuario((prev) => ({ ...prev, password: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Perfil</Label>
+                      <Select
+                        value={novoUsuario.role}
+                        onValueChange={(value) => setNovoUsuario((prev) => ({ ...prev, role: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Comercial">Comercial</SelectItem>
+                          <SelectItem value="Financeiro">Financeiro</SelectItem>
+                          <SelectItem value="Operacional">Operacional</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {error && <p className="text-xs text-destructive">{error}</p>}
+                    <Button onClick={handleCriarUsuario} disabled={saving} className="w-full">
+                      {saving ? 'Salvando...' : 'Criar usuário'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -209,18 +198,21 @@ export default function UsuariosPage() {
           <CardTitle>Usuários Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
-          {usuariosFiltrados.length === 0 ? (
+          {loading ? (
             <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-              Nenhum usuário encontrado. Ajuste filtros ou crie um novo usuário.
+              Carregando usuários...
+            </div>
+          ) : usuariosFiltrados.length === 0 ? (
+            <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+              Nenhum usuário encontrado.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
+                  <TableHead>Username</TableHead>
                   <TableHead>Perfil</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Criado em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -231,11 +223,12 @@ export default function UsuariosPage() {
                     className="hover:bg-muted/30 cursor-pointer"
                     onClick={() => router.push(`/cadastros/usuarios/${usuario.id}`)}
                   >
-                    <TableCell className="font-medium">{usuario.nome}</TableCell>
-                    <TableCell>{usuario.email}</TableCell>
-                    <TableCell>{usuario.perfil}</TableCell>
+                    <TableCell className="font-medium">{usuario.username}</TableCell>
+                    <TableCell>{usuario.role}</TableCell>
                     <TableCell>
-                      <Badge className={statusColor(usuario.status)}>{usuario.status}</Badge>
+                      <Badge variant="outline">
+                        {usuario.createdAt ? new Date(usuario.createdAt).toLocaleDateString('pt-BR') : '-'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-2">
@@ -247,24 +240,6 @@ export default function UsuariosPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-primary/5"
-                          onClick={() => router.push(`/cadastros/usuarios/${usuario.id}/editar`)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        {usuario.status === 'Ativo' && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-rose-50"
-                            onClick={() => handleInativar(usuario)}
-                          >
-                            <UserX className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>

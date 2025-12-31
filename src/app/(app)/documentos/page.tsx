@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Documento, DocumentoStatus, DocumentoTipo } from '../../../lib/mock/documentos';
+import type { Documento, DocumentoStatus, DocumentoTipo } from '@/lib/mock/documentos';
 
 const tipos: DocumentoTipo[] = ['Proposta', 'Documento de custo', 'Contrato', 'Outros'];
 const statusList: DocumentoStatus[] = ['Rascunho', 'Emitido', 'Enviado', 'Assinado', 'Cancelado'];

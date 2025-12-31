@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { EtapaNegocio, Negocio, StatusNegocio } from '../../../../lib/mock/negocios';
+import type { EtapaNegocio, Negocio, StatusNegocio } from '@/lib/mock/negocios';
 import { useDemoData } from '@/src/lib/demo-context';
 
 const timelineBase = ['Negócio criado', 'Contato realizado', 'Proposta enviada'];

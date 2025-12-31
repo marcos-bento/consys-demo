@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Documento, DocumentoStatus } from '../../../../lib/mock/documentos';
+import type { Documento, DocumentoStatus } from '@/lib/mock/documentos';
 
 const statusColor = (status: DocumentoStatus) => {
   switch (status) {

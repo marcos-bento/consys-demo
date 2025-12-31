@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Cliente, TipoPessoa } from '../../../../lib/mock/cadastros';
+import type { Cliente, TipoPessoa } from '@/lib/mock/cadastros';
 
 export default function NovoClientePage() {
   const router = useRouter();

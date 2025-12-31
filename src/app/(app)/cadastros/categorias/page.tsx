@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Categoria, StatusCadastro } from '../../../lib/mock/cadastros';
+import type { Categoria, StatusCadastro } from '@/lib/mock/cadastros';
 
 const statusList: StatusCadastro[] = ['Ativo', 'Inativo'];
 
