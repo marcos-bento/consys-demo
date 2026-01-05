@@ -16,11 +16,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { Cliente, TipoPessoa } from '@/lib/mock/cadastros';
+import type { TipoPessoa } from '@/lib/mock/cadastros';
 
 export default function NovoClientePage() {
   const router = useRouter();
-  const { clientes, setClientes } = useDemoData();
+  const { resetDemo } = useDemoData();
   const [novo, setNovo] = useState({
     tipo: 'PJ' as TipoPessoa,
     razaoSocial: '',
@@ -34,31 +34,26 @@ export default function NovoClientePage() {
     uf: '',
   });
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!novo.razaoSocial && !novo.nome) return;
     if (novo.tipo === 'PJ' && !novo.cnpj) return;
     if (novo.tipo === 'PF' && !novo.cpf) return;
     if (!novo.email) return;
 
-    const nextId = (clientes.length + 1).toString();
-    const hoje = new Date().toISOString().split('T')[0];
-    const novoCliente: Cliente = {
-      id: nextId,
-      tipo: novo.tipo,
-      razaoSocial: novo.razaoSocial || undefined,
-      nome: novo.nome || undefined,
-      nomeFantasia: novo.nomeFantasia || undefined,
-      cnpj: novo.cnpj || undefined,
-      cpf: novo.cpf || undefined,
-      email: novo.email,
-      telefone: novo.telefone,
-      cidade: novo.cidade,
-      uf: novo.uf,
-      status: 'Ativo',
-      dataCriacao: hoje,
-    };
-    setClientes([...clientes, novoCliente]);
-    router.push('/cadastros/clientes');
+    try {
+      const res = await fetch('/api/clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novo),
+      });
+      if (!res.ok) {
+        throw new Error('Falha ao criar cliente');
+      }
+      await resetDemo();
+      router.push('/cadastros/clientes');
+    } catch (error) {
+      console.error('[CLIENTES_CREATE]', error);
+    }
   };
 
   return (

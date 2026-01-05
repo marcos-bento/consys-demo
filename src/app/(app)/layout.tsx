@@ -20,9 +20,9 @@ export default function AppLayout({
         <div className="hidden md:flex">
           <Sidebar />
         </div>
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           <Header onMenuClick={() => setOpen(true)} />
-          <main className="flex-1 p-6 max-w-7xl mx-auto">
+          <main className="flex-1 p-6 w-full min-w-0">
             {children}
           </main>
         </div>

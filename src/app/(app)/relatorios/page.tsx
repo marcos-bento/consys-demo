@@ -1,21 +1,77 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { mockRelatorios, type DadosRelatorio } from '@/src/lib/mock/relatorios';
+import type { DadosRelatorio } from '@/src/lib/mock/relatorios';
 
 export default function RelatoriosPage() {
   const [periodo, setPeriodo] = useState('30');
+  const [dados, setDados] = useState<DadosRelatorio | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const dados: DadosRelatorio = useMemo(() => mockRelatorios[periodo], [periodo]);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/reports?period=${periodo}`, { cache: 'no-store' });
+        if (!res.ok) {
+          throw new Error('Falha ao carregar relatórios');
+        }
+        const payload = (await res.json()) as DadosRelatorio;
+        if (active) {
+          setDados(payload);
+        }
+      } catch (error) {
+        console.error('[RELATORIOS_GET]', error);
+        if (active) {
+          setDados(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [periodo]);
 
-  const maxVendas = Math.max(...dados.vendasSemanais);
-  const maxStatus = Math.max(...Object.values(dados.propostasPorStatus));
+  const dadosCalculados: DadosRelatorio = useMemo(
+    () =>
+      dados ?? {
+        kpis: {
+          vendas: 0,
+          propostasEnviadas: 0,
+          taxaConversao: 0,
+          ticketMedio: 0,
+          variacaoVendas: 0,
+          variacaoPropostas: 0,
+          variacaoConversao: 0,
+          variacaoTicket: 0,
+        },
+        vendasSemanais: Array.from({ length: 8 }, () => 0),
+        propostasPorStatus: {
+          Rascunho: 0,
+          Enviada: 0,
+          Aprovada: 0,
+          Reprovada: 0,
+        },
+        topClientes: [],
+        topProdutos: [],
+      },
+    [dados],
+  );
+
+  const maxVendas = Math.max(...dadosCalculados.vendasSemanais, 1);
+  const maxStatus = Math.max(...Object.values(dadosCalculados.propostasPorStatus), 1);
 
   const formatCurrency = (value: number) => `R$ ${value.toLocaleString('pt-BR')}`;
   const formatPercent = (value: number) => `${value}%`;
@@ -51,7 +107,9 @@ export default function RelatoriosPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Relatórios</h1>
-          <p className="text-muted-foreground">Indicadores e análises (demo)</p>
+          <p className="text-muted-foreground">
+            {loading ? 'Carregando indicadores...' : 'Indicadores e análises'}
+          </p>
         </div>
         <Select value={periodo} onValueChange={setPeriodo}>
           <SelectTrigger className="w-45">
@@ -74,8 +132,10 @@ export default function RelatoriosPage() {
             <CardTitle className="text-sm font-medium">Vendas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(dados.kpis.vendas)}</div>
-            {renderVariacao(dados.kpis.variacaoVendas)}
+            <div className="text-2xl font-bold">
+              {formatCurrency(dadosCalculados.kpis.vendas)}
+            </div>
+            {renderVariacao(dadosCalculados.kpis.variacaoVendas)}
           </CardContent>
         </Card>
         <Card>
@@ -83,8 +143,8 @@ export default function RelatoriosPage() {
             <CardTitle className="text-sm font-medium">Propostas Enviadas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dados.kpis.propostasEnviadas}</div>
-            {renderVariacao(dados.kpis.variacaoPropostas)}
+            <div className="text-2xl font-bold">{dadosCalculados.kpis.propostasEnviadas}</div>
+            {renderVariacao(dadosCalculados.kpis.variacaoPropostas)}
           </CardContent>
         </Card>
         <Card>
@@ -92,8 +152,10 @@ export default function RelatoriosPage() {
             <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPercent(dados.kpis.taxaConversao)}</div>
-            {renderVariacao(dados.kpis.variacaoConversao)}
+            <div className="text-2xl font-bold">
+              {formatPercent(dadosCalculados.kpis.taxaConversao)}
+            </div>
+            {renderVariacao(dadosCalculados.kpis.variacaoConversao)}
           </CardContent>
         </Card>
         <Card>
@@ -101,8 +163,10 @@ export default function RelatoriosPage() {
             <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(dados.kpis.ticketMedio)}</div>
-            {renderVariacao(dados.kpis.variacaoTicket)}
+            <div className="text-2xl font-bold">
+              {formatCurrency(dadosCalculados.kpis.ticketMedio)}
+            </div>
+            {renderVariacao(dadosCalculados.kpis.variacaoTicket)}
           </CardContent>
         </Card>
       </div>
@@ -114,7 +178,7 @@ export default function RelatoriosPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-end justify-between h-64 gap-2">
-            {dados.vendasSemanais.map((valor, index) => {
+            {dadosCalculados.vendasSemanais.map((valor, index) => {
               const height = (valor / maxVendas) * 100;
               return (
                 <div key={index} className="flex flex-col items-center flex-1">
@@ -137,7 +201,7 @@ export default function RelatoriosPage() {
           <CardTitle>Propostas por Status</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {Object.entries(dados.propostasPorStatus).map(([status, qtd]) => {
+          {Object.entries(dadosCalculados.propostasPorStatus).map(([status, qtd]) => {
             const width = (qtd / maxStatus) * 100;
             return (
               <div key={status} className="flex items-center gap-4">
@@ -159,7 +223,7 @@ export default function RelatoriosPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Top Clientes (demo)</CardTitle>
+            <CardTitle>Top Clientes</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -170,7 +234,7 @@ export default function RelatoriosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dados.topClientes.map((cliente, index) => (
+                {dadosCalculados.topClientes.map((cliente, index) => (
                   <TableRow key={index}>
                     <TableCell>{cliente.cliente}</TableCell>
                     <TableCell className="text-right">{formatCurrency(cliente.valor)}</TableCell>
@@ -183,7 +247,7 @@ export default function RelatoriosPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Top Produtos (demo)</CardTitle>
+            <CardTitle>Top Produtos</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -195,7 +259,7 @@ export default function RelatoriosPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dados.topProdutos.map((produto, index) => (
+                {dadosCalculados.topProdutos.map((produto, index) => (
                   <TableRow key={index}>
                     <TableCell>{produto.produto}</TableCell>
                     <TableCell className="text-right">{produto.qtd}</TableCell>

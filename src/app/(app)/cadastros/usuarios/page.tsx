@@ -25,9 +25,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Prisma } from '@/generated/prisma/client';
-
-type DbUser = Prisma.UserGetPayload<{ select: { id: true; username: true; role: true; createdAt: true } }>;
+type DbUser = {
+  id: string;
+  username: string;
+  role: string;
+  createdAt: string;
+};
 
 export default function UsuariosPage() {
   const router = useRouter();

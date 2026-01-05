@@ -209,7 +209,7 @@ export default function ClienteDetailPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => router.push(`/negocios/${negocio.id}`)}
+                        onClick={() => router.push(`/crm/${negocio.id}`)}
                       >
                         Ver
                       </Button>

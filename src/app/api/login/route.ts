@@ -14,7 +14,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { username } });
+    const user = await prisma.user.findUnique({
+      where: { username },
+      include: { role: true },
+    });
 
     if (!user) {
       return NextResponse.json(
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
       user: {
         id: user.id,
         username: user.username,
-        role: user.role,
+        role: user.role?.name ?? "",
       },
     });
 
@@ -46,7 +49,7 @@ export async function POST(req: Request) {
       sameSite: "lax",
       path: "/",
     });
-    response.cookies.set("auth_role", user.role, {
+    response.cookies.set("auth_role", user.role?.name ?? "", {
       httpOnly: true,
       sameSite: "lax",
       path: "/",

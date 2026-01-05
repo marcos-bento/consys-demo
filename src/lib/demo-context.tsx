@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 import type { Lead } from './mock/crm';
 import type { Proposta } from './mock/comercial';
@@ -13,33 +13,6 @@ import type { Cliente, Fornecedor, Produto as ProdutoCadastro, Usuario, Categori
 import type { Assistencia, HistoricoAssistencia, AnexoAssistencia } from './mock/assistencias';
 import type { Veiculo, Agendamento, OrdemServico } from './mock/frota';
 import type { Candidato, NotaCandidato, Colaborador, Ferias, RegistroPonto, ImportacaoPonto } from './mock/dep-pessoal';
-import {
-  getInitialLeads,
-  getInitialPropostas,
-  getInitialProdutos,
-  getInitialMovimentacoes,
-  getInitialLancamentos,
-  getInitialNegocios,
-  getInitialDocumentos,
-  getInitialCompras,
-  getInitialClientes,
-  getInitialFornecedores,
-  getInitialProdutosCadastro,
-  getInitialUsuarios,
-  getInitialCategorias,
-  getInitialAssistencias,
-  getInitialHistoricoAssistencias,
-  getInitialAnexosAssistencias,
-  getInitialVeiculos,
-  getInitialAgendamentos,
-  getInitialOrdensServico,
-  getInitialCandidatos,
-  getInitialNotasCandidatos,
-  getInitialColaboradores,
-  getInitialFerias,
-  getInitialRegistrosPonto,
-  getInitialImportacoesPonto,
-} from './mock/initial-data';
 
 type DemoContextValue = {
   leads: Lead[];
@@ -100,61 +73,76 @@ type DemoContextValue = {
 const DemoContext = createContext<DemoContextValue | null>(null);
 
 export function DemoProvider({ children }: { children: React.ReactNode }) {
-  const [leads, setLeads] = useState<Lead[]>(() => getInitialLeads());
-  const [propostas, setPropostas] = useState<Proposta[]>(() => getInitialPropostas());
-  const [produtos, setProdutos] = useState<Produto[]>(() => getInitialProdutos());
-  const [movimentacoes, setMovimentacoes] = useState<Record<string, Movimentacao[]>>(
-    () => getInitialMovimentacoes(),
-  );
-  const [lancamentos, setLancamentos] = useState<Lancamento[]>(() => getInitialLancamentos());
-  const [negocios, setNegocios] = useState<Negocio[]>(() => getInitialNegocios());
-  const [documentos, setDocumentos] = useState<Documento[]>(() => getInitialDocumentos());
-  const [compras, setCompras] = useState<Compra[]>(() => getInitialCompras());
-  const [clientes, setClientes] = useState<Cliente[]>(() => getInitialClientes());
-  const [fornecedores, setFornecedores] = useState<Fornecedor[]>(() => getInitialFornecedores());
-  const [produtosCadastro, setProdutosCadastro] = useState<ProdutoCadastro[]>(() => getInitialProdutosCadastro());
-  const [usuarios, setUsuarios] = useState<Usuario[]>(() => getInitialUsuarios());
-  const [categorias, setCategorias] = useState<Categoria[]>(() => getInitialCategorias());
-  const [assistencias, setAssistencias] = useState<Assistencia[]>(() => getInitialAssistencias());
-  const [historicoAssistencias, setHistoricoAssistencias] = useState<HistoricoAssistencia[]>(() => getInitialHistoricoAssistencias());
-  const [anexosAssistencias, setAnexosAssistencias] = useState<AnexoAssistencia[]>(() => getInitialAnexosAssistencias());
-  const [veiculos, setVeiculos] = useState<Veiculo[]>(() => getInitialVeiculos());
-  const [agendamentos, setAgendamentos] = useState<Agendamento[]>(() => getInitialAgendamentos());
-  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>(() => getInitialOrdensServico());
-  const [candidatos, setCandidatos] = useState<Candidato[]>(() => getInitialCandidatos());
-  const [notasCandidatos, setNotasCandidatos] = useState<NotaCandidato[]>(() => getInitialNotasCandidatos());
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>(() => getInitialColaboradores());
-  const [ferias, setFerias] = useState<Ferias[]>(() => getInitialFerias());
-  const [registrosPonto, setRegistrosPonto] = useState<RegistroPonto[]>(() => getInitialRegistrosPonto());
-  const [importacoesPonto, setImportacoesPonto] = useState<ImportacaoPonto[]>(() => getInitialImportacoesPonto());
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [propostas, setPropostas] = useState<Proposta[]>([]);
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [movimentacoes, setMovimentacoes] = useState<Record<string, Movimentacao[]>>({});
+  const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
+  const [negocios, setNegocios] = useState<Negocio[]>([]);
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
+  const [compras, setCompras] = useState<Compra[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [produtosCadastro, setProdutosCadastro] = useState<ProdutoCadastro[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [assistencias, setAssistencias] = useState<Assistencia[]>([]);
+  const [historicoAssistencias, setHistoricoAssistencias] = useState<HistoricoAssistencia[]>([]);
+  const [anexosAssistencias, setAnexosAssistencias] = useState<AnexoAssistencia[]>([]);
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
+  const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const [notasCandidatos, setNotasCandidatos] = useState<NotaCandidato[]>([]);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
+  const [ferias, setFerias] = useState<Ferias[]>([]);
+  const [registrosPonto, setRegistrosPonto] = useState<RegistroPonto[]>([]);
+  const [importacoesPonto, setImportacoesPonto] = useState<ImportacaoPonto[]>([]);
+
+  const loadFromApi = useCallback(async () => {
+    try {
+      const res = await fetch('/api/data', { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error('Falha ao carregar dados');
+      }
+      const data = await res.json();
+      setLeads(data.leads ?? []);
+      setPropostas(data.propostas ?? []);
+      setProdutos(data.produtos ?? []);
+      setMovimentacoes(data.movimentacoes ?? {});
+      setLancamentos(data.lancamentos ?? []);
+      setNegocios(data.negocios ?? []);
+      setDocumentos(data.documentos ?? []);
+      setCompras(data.compras ?? []);
+      setClientes(data.clientes ?? []);
+      setFornecedores(data.fornecedores ?? []);
+      setProdutosCadastro(data.produtosCadastro ?? []);
+      setUsuarios(data.usuarios ?? []);
+      setCategorias(data.categorias ?? []);
+      setAssistencias(data.assistencias ?? []);
+      setHistoricoAssistencias(data.historicoAssistencias ?? []);
+      setAnexosAssistencias(data.anexosAssistencias ?? []);
+      setVeiculos(data.veiculos ?? []);
+      setAgendamentos(data.agendamentos ?? []);
+      setOrdensServico(data.ordensServico ?? []);
+      setCandidatos(data.candidatos ?? []);
+      setNotasCandidatos(data.notasCandidatos ?? []);
+      setColaboradores(data.colaboradores ?? []);
+      setFerias(data.ferias ?? []);
+      setRegistrosPonto(data.registrosPonto ?? []);
+      setImportacoesPonto(data.importacoesPonto ?? []);
+    } catch (error) {
+      console.error('[DEMO_DATA_LOAD]', error);
+    }
+  }, []);
 
   const resetDemo = useCallback(() => {
-    setLeads(getInitialLeads());
-    setPropostas(getInitialPropostas());
-    setProdutos(getInitialProdutos());
-    setMovimentacoes(getInitialMovimentacoes());
-    setLancamentos(getInitialLancamentos());
-    setNegocios(getInitialNegocios());
-    setDocumentos(getInitialDocumentos());
-    setCompras(getInitialCompras());
-    setClientes(getInitialClientes());
-    setFornecedores(getInitialFornecedores());
-    setProdutosCadastro(getInitialProdutosCadastro());
-    setUsuarios(getInitialUsuarios());
-    setCategorias(getInitialCategorias());
-    setAssistencias(getInitialAssistencias());
-    setHistoricoAssistencias(getInitialHistoricoAssistencias());
-    setAnexosAssistencias(getInitialAnexosAssistencias());
-    setVeiculos(getInitialVeiculos());
-    setAgendamentos(getInitialAgendamentos());
-    setOrdensServico(getInitialOrdensServico());
-    setCandidatos(getInitialCandidatos());
-    setNotasCandidatos(getInitialNotasCandidatos());
-    setColaboradores(getInitialColaboradores());
-    setFerias(getInitialFerias());
-    setRegistrosPonto(getInitialRegistrosPonto());
-    setImportacoesPonto(getInitialImportacoesPonto());
-  }, []);
+    void loadFromApi();
+  }, [loadFromApi]);
+
+  useEffect(() => {
+    void loadFromApi();
+  }, [loadFromApi]);
 
   return (
     <DemoContext.Provider

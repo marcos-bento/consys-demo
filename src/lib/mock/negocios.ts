@@ -17,6 +17,7 @@ export interface Negocio {
   diasNoFunil: number;
   origem?: string;
   tags?: string[];
+  motivoPerda?: string;
 }
 
 export const mockNegocios: Negocio[] = [

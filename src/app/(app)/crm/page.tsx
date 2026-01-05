@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState, type DragEvent, type KeyboardEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState, type DragEvent, type KeyboardEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { EllipsisVertical, Plus, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +27,17 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useDemoData } from '@/src/lib/demo-context';
-import type { EtapaNegocio, Negocio, PrioridadeNegocio, StatusNegocio } from '@/lib/mock/negocios';
+import type { PrioridadeNegocio, StatusNegocio } from '@/lib/mock/negocios';
 
-const funis = ['Vendas'];
-const etapas: EtapaNegocio[] = ['Novo', 'Contato', 'Proposta', 'Negociação', 'Fechado'];
+type PipelineData = {
+  id: string;
+  name: string;
+  stages: { name: string }[];
+  lossReasons?: { id: string; name: string }[];
+};
+
+const fallbackFunis = ['Vendas'];
+const fallbackEtapas = ['Novo', 'Contato', 'Proposta', 'Negociacao', 'Fechado'];
 
 const badgeByStatus: Record<StatusNegocio, string> = {
   Ativo: 'bg-blue-50 text-blue-700 border border-blue-100',
@@ -40,29 +47,90 @@ const badgeByStatus: Record<StatusNegocio, string> = {
 
 export default function NegociosPage() {
   const router = useRouter();
-  const { negocios, setNegocios } = useDemoData();
+  const searchParams = useSearchParams();
+  const { negocios, setNegocios, resetDemo } = useDemoData();
   const [funilSelecionado, setFunilSelecionado] = useState<string>('Vendas');
+  const [funisOptions, setFunisOptions] = useState<string[]>(fallbackFunis);
+  const [pipelinesData, setPipelinesData] = useState<PipelineData[]>([]);
+  const [etapas, setEtapas] = useState<string[]>(fallbackEtapas);
   const [search, setSearch] = useState('');
   const [responsavelFilter, setResponsavelFilter] = useState<string>('Todos');
   const [prioridadeFilter, setPrioridadeFilter] = useState<PrioridadeNegocio | 'Todos'>('Todos');
   const [statusFilter, setStatusFilter] = useState<StatusNegocio | 'Todos'>('Todos');
-  const [hoveredEtapa, setHoveredEtapa] = useState<EtapaNegocio | null>(null);
+  const [hoveredEtapa, setHoveredEtapa] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'funnel' | 'table'>('funnel');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [funilParamApplied, setFunilParamApplied] = useState(false);
+  const [perdaOpen, setPerdaOpen] = useState(false);
+  const [perdaNegocioId, setPerdaNegocioId] = useState<string | null>(null);
+  const [motivosPerda, setMotivosPerda] = useState<{ id: string; name: string }[]>([]);
+  const [motivoSelecionado, setMotivoSelecionado] = useState<string>('');
   const [novoNegocio, setNovoNegocio] = useState({
     empresa: '',
     contato: '',
     telefone: '',
     valor: 0,
     responsavel: 'Ana Costa',
-    etapa: 'Novo' as EtapaNegocio,
+    etapa: 'Novo',
     prioridade: 'Média' as PrioridadeNegocio,
     observacao: '',
   });
 
-  const funisOptions = funis;
-  const responsaveis = useMemo(() => Array.from(new Set(negocios.map((n) => n.responsavel))), [negocios]);
+  const responsaveis = useMemo(
+    () =>
+      Array.from(new Set(negocios.map((n) => n.responsavel?.trim()).filter(Boolean) as string[])),
+    [negocios],
+  );
+
+  useEffect(() => {
+    const funilParam = searchParams.get('funil');
+    if (!funilParam || funilParamApplied) return;
+    setFunilSelecionado(funilParam);
+    setFunilParamApplied(true);
+  }, [funilParamApplied, searchParams]);
+
+  useEffect(() => {
+    let isActive = true;
+    const loadPipelines = async () => {
+      try {
+        const res = await fetch('/api/pipelines', { cache: 'no-store' });
+        if (!res.ok) {
+          throw new Error('Falha ao carregar funis');
+        }
+        const data = await res.json();
+        const pipelines = (data.pipelines ?? []) as PipelineData[];
+        if (!isActive) return;
+        if (pipelines.length === 0) {
+          setFunisOptions(fallbackFunis);
+          setEtapas(fallbackEtapas);
+          return;
+        }
+        setPipelinesData(pipelines);
+        const pipelineNames = pipelines.map((pipeline) => pipeline.name?.trim()).filter(Boolean) as string[];
+        setFunisOptions(pipelineNames.length > 0 ? pipelineNames : fallbackFunis);
+        const selected = pipelines.find((pipeline) => pipeline.name === funilSelecionado) ?? pipelines[0];
+        const stageNames = selected.stages
+          .map((stage) => stage.name?.trim())
+          .filter(Boolean) as string[];
+        setEtapas(stageNames.length > 0 ? stageNames : fallbackEtapas);
+        if (selected.name !== funilSelecionado) {
+          setFunilSelecionado(selected.name);
+        }
+      } catch (error) {
+        console.error('[FUNIS_LOAD]', error);
+      }
+    };
+    void loadPipelines();
+    return () => {
+      isActive = false;
+    };
+  }, [funilSelecionado]);
+
+  useEffect(() => {
+    if (etapas.length === 0) return;
+    setNovoNegocio((prev) => (etapas.includes(prev.etapa) ? prev : { ...prev, etapa: etapas[0] }));
+  }, [etapas]);
 
   const negociosFiltrados = useMemo(() => {
     return negocios.filter((negocio) => {
@@ -86,20 +154,60 @@ export default function NegociosPage() {
       .reduce((sum, negocio) => sum + negocio.valor, 0),
   }));
 
-  const handleMoverEtapa = (id: string, novaEtapa: EtapaNegocio) => {
+  const atualizarNegocio = async (id: string, payload: { etapa?: string; status?: StatusNegocio; lossReasonId?: string }) => {
+    try {
+      const res = await fetch(`/api/negocios/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error('Falha ao atualizar negocio');
+      }
+    } catch (error) {
+      console.error('[NEGOCIOS_UPDATE]', error);
+      resetDemo();
+    }
+  };
+
+  const handleMoverEtapa = (id: string, novaEtapa: string) => {
     setNegocios(
       negocios.map((negocio) =>
         negocio.id === id ? { ...negocio, etapa: novaEtapa, status: novaEtapa === 'Fechado' ? negocio.status : 'Ativo' } : negocio,
       ),
     );
+    void atualizarNegocio(id, { etapa: novaEtapa });
   };
 
   const handleStatus = (id: string, status: StatusNegocio) => {
+    if (status === 'Perdido') {
+      const negocio = negocios.find((item) => item.id === id);
+      if (!negocio) return;
+      const pipeline = pipelinesData.find((item) => item.name === negocio.funil);
+      setMotivosPerda(pipeline?.lossReasons ?? []);
+      setMotivoSelecionado('');
+      setPerdaNegocioId(id);
+      setPerdaOpen(true);
+      return;
+    }
     setNegocios(
       negocios.map((negocio) =>
-        negocio.id === id ? { ...negocio, status, etapa: status === 'Ativo' ? negocio.etapa : 'Fechado' } : negocio,
+        negocio.id === id ? { ...negocio, status, etapa: status === 'Ganho' ? 'Fechado' : negocio.etapa } : negocio,
       ),
     );
+    void atualizarNegocio(id, { status });
+  };
+
+  const handleConfirmarPerda = () => {
+    if (!perdaNegocioId || !motivoSelecionado) return;
+    setNegocios(
+      negocios.map((negocio) =>
+        negocio.id === perdaNegocioId ? { ...negocio, status: 'Perdido' } : negocio,
+      ),
+    );
+    void atualizarNegocio(perdaNegocioId, { status: 'Perdido', lossReasonId: motivoSelecionado });
+    setPerdaOpen(false);
+    setPerdaNegocioId(null);
   };
 
   const handleCardOpen = (id: string) => {
@@ -117,13 +225,13 @@ export default function NegociosPage() {
     setHoveredEtapa(null);
   };
 
-  const handleDragOver = (event: DragEvent<HTMLDivElement>, etapa: EtapaNegocio) => {
+  const handleDragOver = (event: DragEvent<HTMLDivElement>, etapa: string) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     setHoveredEtapa(etapa);
   };
 
-  const handleDrop = (event: DragEvent<HTMLDivElement>, etapa: EtapaNegocio) => {
+  const handleDrop = (event: DragEvent<HTMLDivElement>, etapa: string) => {
     event.preventDefault();
     const cardId = draggingId || event.dataTransfer.getData('text/plain');
     const dragged = negocios.find((n) => n.id === cardId);
@@ -141,50 +249,54 @@ export default function NegociosPage() {
     }
   };
 
-  const handleCriarNegocio = () => {
+  const handleCriarNegocio = async () => {
     if (!novoNegocio.empresa.trim()) return;
-    const nextId = (negocios.length + 1).toString();
-    const codigo = `NEG-${String(nextId).padStart(3, '0')}`;
-    const novo: Negocio = {
-      id: nextId,
-      codigo,
-      empresa: novoNegocio.empresa,
-      contato: novoNegocio.contato || 'Contato não informado',
-      telefone: novoNegocio.telefone || undefined,
-      valor: novoNegocio.valor,
-      responsavel: novoNegocio.responsavel,
-      etapa: novoNegocio.etapa,
-      status: 'Ativo',
-      prioridade: novoNegocio.prioridade,
-      funil: funilSelecionado as Negocio['funil'],
-      diasNoFunil: 0,
-      origem: 'Manual',
-    };
-    setNegocios([...negocios, novo]);
-    setIsDialogOpen(false);
-    setNovoNegocio({
-      empresa: '',
-      contato: '',
-      telefone: '',
-      valor: 0,
-      responsavel: 'Ana Costa',
-      etapa: 'Novo',
-      prioridade: 'Média',
-      observacao: '',
-    });
+    try {
+      const res = await fetch('/api/negocios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa: novoNegocio.empresa,
+          contato: novoNegocio.contato || 'Contato nÇœo informado',
+          telefone: novoNegocio.telefone || undefined,
+          valor: novoNegocio.valor,
+          responsavel: novoNegocio.responsavel,
+          etapa: novoNegocio.etapa,
+          prioridade: novoNegocio.prioridade,
+          funil: funilSelecionado,
+          origem: 'Manual',
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Falha ao criar negocio');
+      }
+      await resetDemo();
+      setIsDialogOpen(false);
+      setNovoNegocio({
+        empresa: '',
+        contato: '',
+        telefone: '',
+        valor: 0,
+        responsavel: 'Ana Costa',
+        etapa: 'Novo',
+        prioridade: 'MÇ¸dia',
+        observacao: '',
+      });
+    } catch (error) {
+      console.error('[NEGOCIOS_CREATE]', error);
+    }
   };
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
   return (
-    <div className="space-y-6 lg:space-y-7 -mt-3 px-[20px] pt-[20px]">
+    <div className="space-y-6 lg:space-y-7 -mt-3 px-[20px] pt-[20px] max-w-full overflow-x-hidden">
       {/* Topbar */}
       <Card className="shadow-sm border border-border/70 mt-[10px] py-2">
         <CardContent className="py-2 px-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1 w-36">
+          <div className="flex flex-wrap items-end gap-3 max-w-full">
+            <div className="space-y-1 w-full sm:w-36">
               <Label className="text-xs text-muted-foreground">Funil</Label>
               <Select value={funilSelecionado} onValueChange={setFunilSelecionado}>
                 <SelectTrigger className="w-full" title="Filtra os negócios pelo funil ativo">
@@ -199,7 +311,7 @@ export default function NegociosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 w-52">
+            <div className="space-y-1 w-full sm:w-52">
               <Label className="text-xs text-muted-foreground">Busca</Label>
               <div className="relative w-full" title="Procure por empresa, contato ou código">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -211,7 +323,7 @@ export default function NegociosPage() {
                 />
               </div>
             </div>
-            <div className="space-y-1 w-40">
+            <div className="space-y-1 w-full sm:w-40">
               <Label className="text-xs text-muted-foreground">Responsável</Label>
               <Select value={responsavelFilter} onValueChange={setResponsavelFilter}>
                 <SelectTrigger className="w-full" title="Filtra pelo responsável vinculado ao negócio">
@@ -227,7 +339,7 @@ export default function NegociosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 w-32">
+            <div className="space-y-1 w-full sm:w-32">
               <Label className="text-xs text-muted-foreground">Status</Label>
               <Select value={statusFilter} onValueChange={(value: StatusNegocio | 'Todos') => setStatusFilter(value)}>
                 <SelectTrigger className="w-full" title="Filtra negócios por status atual">
@@ -241,7 +353,7 @@ export default function NegociosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 w-32">
+            <div className="space-y-1 w-full sm:w-32">
               <Label className="text-xs text-muted-foreground">Visão</Label>
               <Select value={viewMode} onValueChange={(value: 'funnel' | 'table') => setViewMode(value)}>
                 <SelectTrigger className="w-full" title="Altere entre visualização em funil ou tabela">
@@ -253,12 +365,12 @@ export default function NegociosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="outline" className="h-[42px]" title="Crie um filtro personalizado para os negócios">
+            <Button variant="outline" className="h-[42px] w-full sm:w-auto" title="Crie um filtro personalizado para os negócios">
               Criar filtro dinâmico
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="shadow-sm hover:shadow h-[42px]">
+                <Button className="shadow-sm hover:shadow h-[42px] w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Novo negócio
                 </Button>
@@ -326,7 +438,7 @@ export default function NegociosPage() {
                       <Label>Etapa inicial</Label>
                       <Select
                         value={novoNegocio.etapa}
-                        onValueChange={(value: EtapaNegocio) => setNovoNegocio({ ...novoNegocio, etapa: value })}
+                        onValueChange={(value) => setNovoNegocio({ ...novoNegocio, etapa: value })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -376,14 +488,14 @@ export default function NegociosPage() {
       </Card>
 
       {viewMode === 'funnel' ? (
-        <div className="overflow-x-auto pb-4 -mx-1 sm:-mx-2">
-          <div className="flex gap-5 min-w-max px-1 sm:px-2">
+        <div className="overflow-x-auto pb-4">
+          <div className="flex flex-wrap gap-5 sm:flex-nowrap">
             {negociosPorEtapa.map(({ etapa, itens, total }) => {
               const isActive = hoveredEtapa === etapa;
               return (
                 <div
                   key={etapa}
-                  className={`w-72 shrink-0 space-y-3 rounded-xl border px-3 pb-3 pt-[5px] shadow-sm transition-colors ring-1 ring-slate-300/80 ${
+                  className={`w-full sm:w-72 shrink-0 space-y-3 rounded-xl border px-3 pb-3 pt-[5px] shadow-sm transition-colors ring-1 ring-slate-300/80 ${
                     isActive ? 'border-primary/60 bg-primary/5 ring-slate-400/90' : 'border-border/70 bg-white/70'
                   }`}
                   onDragOver={(event) => handleDragOver(event, etapa)}
@@ -415,7 +527,7 @@ export default function NegociosPage() {
                         role="button"
                         className={`cursor-grab rounded-lg border border-border/60 shadow-sm transition hover:border-primary/40 hover:shadow-md active:cursor-grabbing ${
                           draggingId === negocio.id ? 'opacity-80 ring-2 ring-primary/30' : ''
-                        }`}
+                        } ${negocio.status === 'Perdido' ? 'bg-rose-200' : ''}`}
                       >
                         <CardContent className="p-3 space-y-2.5">
                           <div className="flex items-start justify-between gap-2">
@@ -521,6 +633,53 @@ export default function NegociosPage() {
           </table>
         </div>
       )}
+
+      <Dialog
+        open={perdaOpen}
+        onOpenChange={(open) => {
+          setPerdaOpen(open);
+          if (!open) {
+            setMotivoSelecionado('');
+            setPerdaNegocioId(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Motivo da perda</DialogTitle>
+            <DialogDescription>Selecione o motivo para marcar o negocio como perdido.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {motivosPerda.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum motivo cadastrado para este funil.</p>
+            ) : (
+              <div className="space-y-1">
+                <Label>Motivo</Label>
+                <Select value={motivoSelecionado} onValueChange={setMotivoSelecionado}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um motivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {motivosPerda.map((motivo) => (
+                      <SelectItem key={motivo.id} value={motivo.id}>
+                        {motivo.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPerdaOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmarPerda} disabled={!motivoSelecionado}>
+                Confirmar perda
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

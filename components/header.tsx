@@ -45,6 +45,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
   const { resetDemo } = useDemoData();
   const title = titles[pathname] || "Con'SYS";
+  const [isMounted, setIsMounted] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [username, setUsername] = useState('Usuário');
 
@@ -53,6 +54,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   };
 
   useEffect(() => {
+    setIsMounted(true);
     const loadUser = async () => {
       try {
         const resMe = await fetch('/api/users/me', { cache: 'no-store', credentials: 'include' });
@@ -76,35 +78,44 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   return (
     <>
-      <header className="bg-white shadow p-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
-            <Menu />
-          </Button>
-          <h1 className="text-xl font-semibold ml-2 md:ml-0">{title}</h1>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-            <Input placeholder="Buscar..." className="pl-8 w-64" />
+      <header className="bg-white shadow p-4">
+        <div className="mx-auto flex w-full max-w-[75vw] flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon" className="md:hidden" onClick={onMenuClick}>
+              <Menu />
+            </Button>
+            <h1 className="text-xl font-semibold ml-2 md:ml-0">{title}</h1>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center space-x-2">
-              <User size={20} />
-              <span>{username}</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  setIsResetOpen(true);
-                }}
-              >
-                Resetar dados da demo
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex flex-1 flex-wrap items-center justify-end gap-4 min-w-0">
+            <div className="relative w-full max-w-xs min-w-0">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+              <Input placeholder="Buscar..." className="pl-8 w-full" />
+            </div>
+            {isMounted ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center space-x-2">
+                  <User size={20} />
+                  <span className="hidden sm:inline">{username}</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      setIsResetOpen(true);
+                    }}
+                  >
+                    Resetar dados da demo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>Sair</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <User size={20} />
+                <span className="hidden sm:inline">{username}</span>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

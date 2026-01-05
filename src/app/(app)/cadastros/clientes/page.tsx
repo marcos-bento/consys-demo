@@ -32,7 +32,7 @@ const statusList: StatusCadastro[] = ['Ativo', 'Inativo'];
 
 export default function ClientesPage() {
   const router = useRouter();
-  const { clientes, setClientes } = useDemoData();
+  const { clientes, setClientes, resetDemo } = useDemoData();
   const [search, setSearch] = useState('');
   const [tipoFilter, setTipoFilter] = useState<TipoPessoa | 'Todos'>('Todos');
   const [statusFilter, setStatusFilter] = useState<StatusCadastro | 'Todos'>('Todos');
@@ -87,42 +87,37 @@ export default function ClientesPage() {
     );
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!novo.razaoSocial && !novo.nome) return;
     if (novo.tipo === 'PJ' && !novo.cnpj) return;
     if (novo.tipo === 'PF' && !novo.cpf) return;
 
-    const nextId = (clientes.length + 1).toString();
-    const hoje = new Date().toISOString().split('T')[0];
-    const novoCliente: Cliente = {
-      id: nextId,
-      tipo: novo.tipo,
-      razaoSocial: novo.razaoSocial || undefined,
-      nome: novo.nome || undefined,
-      nomeFantasia: novo.nomeFantasia || undefined,
-      cnpj: novo.cnpj || undefined,
-      cpf: novo.cpf || undefined,
-      email: novo.email,
-      telefone: novo.telefone,
-      cidade: novo.cidade,
-      uf: novo.uf,
-      status: 'Ativo',
-      dataCriacao: hoje,
-    };
-    setClientes([...clientes, novoCliente]);
-    setIsDialogOpen(false);
-    setNovo({
-      tipo: 'PJ',
-      razaoSocial: '',
-      nome: '',
-      nomeFantasia: '',
-      cnpj: '',
-      cpf: '',
-      email: '',
-      telefone: '',
-      cidade: '',
-      uf: '',
-    });
+    try {
+      const res = await fetch('/api/clientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novo),
+      });
+      if (!res.ok) {
+        throw new Error('Falha ao criar cliente');
+      }
+      await resetDemo();
+      setIsDialogOpen(false);
+      setNovo({
+        tipo: 'PJ',
+        razaoSocial: '',
+        nome: '',
+        nomeFantasia: '',
+        cnpj: '',
+        cpf: '',
+        email: '',
+        telefone: '',
+        cidade: '',
+        uf: '',
+      });
+    } catch (error) {
+      console.error('[CLIENTES_CREATE]', error);
+    }
   };
 
   const getNomeExibicao = (cliente: Cliente) => {

@@ -33,7 +33,7 @@ const statusList: StatusCadastro[] = ['Ativo', 'Inativo'];
 
 export default function ProdutosPage() {
   const router = useRouter();
-  const { produtosCadastro, setProdutosCadastro } = useDemoData();
+  const { produtosCadastro, setProdutosCadastro, resetDemo } = useDemoData();
   const [search, setSearch] = useState('');
   const [categoriaFilter, setCategoriaFilter] = useState<string>('Todos');
   const [statusFilter, setStatusFilter] = useState<StatusCadastro | 'Todos'>('Todos');
@@ -47,7 +47,11 @@ export default function ProdutosPage() {
     controladoEstoque: true,
   });
 
-  const categorias = useMemo(() => Array.from(new Set(produtosCadastro.map((p) => p.categoria))), [produtosCadastro]);
+  const categorias = useMemo(
+    () =>
+      Array.from(new Set(produtosCadastro.map((p) => p.categoria?.trim()).filter(Boolean) as string[])),
+    [produtosCadastro],
+  );
 
   const produtosFiltrados = useMemo(() => {
     return produtosCadastro.filter((produto) => {
@@ -82,32 +86,31 @@ export default function ProdutosPage() {
     );
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!novo.nome.trim() || !novo.codigo.trim()) return;
 
-    const nextId = (produtosCadastro.length + 1).toString();
-    const hoje = new Date().toISOString().split('T')[0];
-    const novoProduto: Produto = {
-      id: nextId,
-      nome: novo.nome,
-      codigo: novo.codigo,
-      categoria: novo.categoria,
-      unidade: novo.unidade,
-      precoBase: novo.precoBase,
-      controladoEstoque: novo.controladoEstoque,
-      status: 'Ativo',
-      dataCriacao: hoje,
-    };
-    setProdutosCadastro([...produtosCadastro, novoProduto]);
-    setIsDialogOpen(false);
-    setNovo({
-      nome: '',
-      codigo: '',
-      categoria: '',
-      unidade: 'un',
-      precoBase: 0,
-      controladoEstoque: true,
-    });
+    try {
+      const res = await fetch('/api/produtos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novo),
+      });
+      if (!res.ok) {
+        throw new Error('Falha ao criar produto');
+      }
+      await resetDemo();
+      setIsDialogOpen(false);
+      setNovo({
+        nome: '',
+        codigo: '',
+        categoria: '',
+        unidade: 'un',
+        precoBase: 0,
+        controladoEstoque: true,
+      });
+    } catch (error) {
+      console.error('[PRODUTOS_CREATE]', error);
+    }
   };
 
   return (

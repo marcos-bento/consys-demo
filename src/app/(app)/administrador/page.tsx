@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -16,6 +18,9 @@ export default function AdministradorPage() {
           <CardTitle>Configurações</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
+          <Button asChild variant="secondary" className="min-w-[180px] justify-center">
+            <Link href="/administrador/funis">Configurar Funis</Link>
+          </Button>
           <Button variant="secondary" className="min-w-[180px] justify-center">
             Ver log
           </Button>
