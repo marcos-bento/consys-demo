@@ -45,25 +45,25 @@ export default function Sidebar({ onLinkClick }: SidebarProps) {
 
   return (
     <div
-      className={`min-h-full bg-blue-900 text-white flex flex-col transition-all duration-200 ${
-        collapsed ? 'w-16' : 'w-64'
+      className={`min-h-full bg-[#317daf] text-white flex flex-col transition-all duration-200 overflow-hidden ${
+        collapsed ? 'w-16' : 'w-52'
       }`}
     >
-      <div className="flex items-center justify-between p-4">
-        <h1 className={`text-xl font-bold truncate transition-all ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
+      <div className="flex items-center justify-between p-3">
+        <h1 className={`text-lg font-bold truncate transition-all ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
           Con'SYS
         </h1>
         <button
           type="button"
           aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
           onClick={() => setCollapsed((prev) => !prev)}
-          className="text-white hover:bg-blue-800 rounded-md p-2 transition-colors"
+          className="text-white hover:bg-blue-800 rounded-md p-1.5 transition-colors"
         >
-          {collapsed ? <ChevronLast size={18} /> : <ChevronFirst size={18} />}
+          {collapsed ? <ChevronLast size={16} /> : <ChevronFirst size={16} />}
         </button>
       </div>
       <nav className="flex-1">
-        <ul>
+        <ul className="space-y-1">
           {links.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -71,11 +71,11 @@ export default function Sidebar({ onLinkClick }: SidebarProps) {
                 <Link
                   href={link.href}
                   onClick={onLinkClick}
-                  className={`flex items-center gap-3 p-4 hover:bg-gray-700 transition-colors ${
-                    isActive ? 'bg-gray-700' : ''
+                  className={`flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-700 transition-colors max-w-full ${
+                    isActive ? 'bg-[#2b2b2b]' : ''
                   } ${collapsed ? 'justify-center' : ''}`}
                 >
-                  <link.icon size={20} />
+                  <link.icon size={18} />
                   <span className={`whitespace-nowrap transition-opacity ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
                     {link.label}
                   </span>

@@ -101,18 +101,18 @@ export default function AssistenciaDetail() {
       'Nova': { color: 'bg-blue-50 text-blue-700 border border-blue-100', label: 'Nova' },
       'Em análise': { color: 'bg-yellow-50 text-yellow-700 border border-yellow-100', label: 'Em análise' },
       'Agendada': { color: 'bg-purple-50 text-purple-700 border border-purple-100', label: 'Agendada' },
-      'Em execução': { color: 'bg-orange-50 text-orange-700 border border-orange-100', label: 'Em execução' },
-      'Concluída': { color: 'bg-green-50 text-green-700 border border-green-100', label: 'Concluída' },
-      'Cancelada': { color: 'bg-red-50 text-red-700 border border-red-100', label: 'Cancelada' },
+      'Em execução': { color: 'bg-[#d17a45] text-white border border-[#d17a45]', label: 'Em execução' },
+      'Concluída': { color: 'bg-[#4a8f4a] text-white border border-[#4a8f4a]', label: 'Concluída' },
+      'Cancelada': { color: 'bg-[#d34c46] text-white border border-[#d34c46]', label: 'Cancelada' },
     };
     return statusMap[etapa];
   };
 
   const getPrioridadeColor = (prioridade: string) => {
     switch (prioridade) {
-      case 'Alta': return 'bg-red-50 text-red-700 border border-red-100';
+      case 'Alta': return 'bg-[#d34c46] text-white border border-[#d34c46]';
       case 'Média': return 'bg-yellow-50 text-yellow-700 border border-yellow-100';
-      case 'Baixa': return 'bg-green-50 text-green-700 border border-green-100';
+      case 'Baixa': return 'bg-[#4a8f4a] text-white border border-[#4a8f4a]';
       default: return 'bg-gray-50 text-gray-700 border border-gray-100';
     }
   };
@@ -446,9 +446,9 @@ export default function AssistenciaDetail() {
                         <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                           {item.tipo === 'Criada' && <AlertTriangle className="h-4 w-4 text-blue-600" />}
                           {item.tipo === 'Agendada' && <Calendar className="h-4 w-4 text-purple-600" />}
-                          {item.tipo === 'Iniciada' && <Clock className="h-4 w-4 text-orange-600" />}
-                          {item.tipo === 'Concluída' && <CheckCircle className="h-4 w-4 text-green-600" />}
-                          {item.tipo === 'Cancelada' && <XCircle className="h-4 w-4 text-red-600" />}
+                          {item.tipo === 'Iniciada' && <Clock className="h-4 w-4 text-white" />}
+                          {item.tipo === 'Concluída' && <CheckCircle className="h-4 w-4 text-white" />}
+                          {item.tipo === 'Cancelada' && <XCircle className="h-4 w-4 text-white" />}
                           {item.tipo === 'Observação' && <FileText className="h-4 w-4 text-gray-600" />}
                         </div>
                       </div>

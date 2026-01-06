@@ -102,11 +102,11 @@ export function RecrutamentoTab() {
       case 'Entrevista':
         return 'bg-purple-100 text-purple-800';
       case 'Teste':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-[#d17a45] text-white';
       case 'Aprovado':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#4a8f4a] text-white';
       case 'Reprovado':
-        return 'bg-red-100 text-red-800';
+        return 'bg-[#d34c46] text-white';
       default:
         return 'bg-gray-100 text-gray-800';
     }

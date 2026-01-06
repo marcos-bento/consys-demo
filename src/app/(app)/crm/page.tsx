@@ -41,8 +41,8 @@ const fallbackEtapas = ['Novo', 'Contato', 'Proposta', 'Negociacao', 'Fechado'];
 
 const badgeByStatus: Record<StatusNegocio, string> = {
   Ativo: 'bg-blue-50 text-blue-700 border border-blue-100',
-  Ganho: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-  Perdido: 'bg-rose-50 text-rose-700 border border-rose-100',
+  Ganho: 'bg-[#4a8f4a] text-white border border-[#4a8f4a]',
+  Perdido: 'bg-[#d34c46] text-white border border-[#d34c46]',
 };
 
 export default function NegociosPage() {
@@ -53,6 +53,7 @@ export default function NegociosPage() {
   const [funisOptions, setFunisOptions] = useState<string[]>(fallbackFunis);
   const [pipelinesData, setPipelinesData] = useState<PipelineData[]>([]);
   const [etapas, setEtapas] = useState<string[]>(fallbackEtapas);
+  const [username, setUsername] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [responsavelFilter, setResponsavelFilter] = useState<string>('Todos');
   const [prioridadeFilter, setPrioridadeFilter] = useState<PrioridadeNegocio | 'Todos'>('Todos');
@@ -61,7 +62,7 @@ export default function NegociosPage() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'funnel' | 'table'>('funnel');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [funilParamApplied, setFunilParamApplied] = useState(false);
+  const [funilInitReady, setFunilInitReady] = useState(false);
   const [perdaOpen, setPerdaOpen] = useState(false);
   const [perdaNegocioId, setPerdaNegocioId] = useState<string | null>(null);
   const [motivosPerda, setMotivosPerda] = useState<{ id: string; name: string }[]>([]);
@@ -84,13 +85,63 @@ export default function NegociosPage() {
   );
 
   useEffect(() => {
+    if (funilInitReady) return;
     const funilParam = searchParams.get('funil');
-    if (!funilParam || funilParamApplied) return;
-    setFunilSelecionado(funilParam);
-    setFunilParamApplied(true);
-  }, [funilParamApplied, searchParams]);
+    if (funilParam) {
+      setFunilSelecionado(funilParam);
+      setFunilInitReady(true);
+      return;
+    }
+    if (username === null) return;
+    if (!username) {
+      setFunilInitReady(true);
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(`crm-funil:${username}`);
+      if (stored) {
+        setFunilSelecionado(stored);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar funil salvo', error);
+    } finally {
+      setFunilInitReady(true);
+    }
+  }, [funilInitReady, searchParams, username]);
 
   useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const resMe = await fetch('/api/users/me', { cache: 'no-store', credentials: 'include' });
+        if (!resMe.ok) {
+          setUsername('');
+          return;
+        }
+        const me = await resMe.json();
+        if (me?.username) {
+          setUsername(me.username);
+        } else {
+          setUsername('');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar usuário', error);
+        setUsername('');
+      }
+    };
+    void loadUser();
+  }, []);
+
+  useEffect(() => {
+    if (!username || !funilInitReady) return;
+    try {
+      localStorage.setItem(`crm-funil:${username}`, funilSelecionado);
+    } catch (error) {
+      console.error('Erro ao salvar funil', error);
+    }
+  }, [funilSelecionado, funilInitReady, username]);
+
+  useEffect(() => {
+    if (!funilInitReady) return;
     let isActive = true;
     const loadPipelines = async () => {
       try {
@@ -125,7 +176,7 @@ export default function NegociosPage() {
     return () => {
       isActive = false;
     };
-  }, [funilSelecionado]);
+  }, [funilInitReady, funilSelecionado]);
 
   useEffect(() => {
     if (etapas.length === 0) return;
@@ -257,7 +308,7 @@ export default function NegociosPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           empresa: novoNegocio.empresa,
-          contato: novoNegocio.contato || 'Contato nÇœo informado',
+          contato: novoNegocio.contato || 'Contato não informado',
           telefone: novoNegocio.telefone || undefined,
           valor: novoNegocio.valor,
           responsavel: novoNegocio.responsavel,
@@ -279,7 +330,7 @@ export default function NegociosPage() {
         valor: 0,
         responsavel: 'Ana Costa',
         etapa: 'Novo',
-        prioridade: 'MÇ¸dia',
+        prioridade: 'Média',
         observacao: '',
       });
     } catch (error) {
@@ -290,12 +341,16 @@ export default function NegociosPage() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  if (!funilInitReady) {
+    return <div className="min-h-[60vh] w-full" />;
+  }
+
   return (
-    <div className="space-y-6 lg:space-y-7 -mt-3 px-[20px] pt-[20px] max-w-full overflow-x-hidden">
+    <div className="space-y-0 px-0 pt-0 max-w-full overflow-x-hidden">
       {/* Topbar */}
-      <Card className="shadow-sm border border-border/70 mt-[10px] py-2">
-        <CardContent className="py-2 px-3">
-          <div className="flex flex-wrap items-end gap-3 max-w-full">
+      <Card className="border-b border-border/70 bg-white mt-0 py-0 rounded-lg sticky top-0 z-30">
+        <CardContent className="p-0">
+          <div className="flex flex-wrap items-center gap-3 max-w-full px-3 py-2">
             <div className="space-y-1 w-full sm:w-36">
               <Label className="text-xs text-muted-foreground">Funil</Label>
               <Select value={funilSelecionado} onValueChange={setFunilSelecionado}>
@@ -311,7 +366,7 @@ export default function NegociosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 w-full sm:w-52">
+            <div className="space-y-1 w-full sm:w-56">
               <Label className="text-xs text-muted-foreground">Busca</Label>
               <div className="relative w-full" title="Procure por empresa, contato ou código">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -346,7 +401,7 @@ export default function NegociosPage() {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Todos">Status</SelectItem>
+                  <SelectItem value="Todos">Todos</SelectItem>
                   <SelectItem value="Ativo">Ativo</SelectItem>
                   <SelectItem value="Ganho">Ganho</SelectItem>
                   <SelectItem value="Perdido">Perdido</SelectItem>
@@ -365,12 +420,12 @@ export default function NegociosPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="outline" className="h-[42px] w-full sm:w-auto" title="Crie um filtro personalizado para os negócios">
+            <Button variant="outline" className="h-[40px] w-full sm:w-auto" title="Crie um filtro personalizado para os negócios">
               Criar filtro dinâmico
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="shadow-sm hover:shadow h-[42px] w-full sm:w-auto">
+                <Button className="shadow-sm hover:shadow h-[40px] w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Novo negócio
                 </Button>
@@ -488,28 +543,28 @@ export default function NegociosPage() {
       </Card>
 
       {viewMode === 'funnel' ? (
-        <div className="overflow-x-auto pb-4">
-          <div className="flex flex-wrap gap-5 sm:flex-nowrap">
+        <div className="overflow-x-auto pb-4 px-0 mt-2.5">
+          <div className="flex flex-wrap gap-0 sm:flex-nowrap items-start">
             {negociosPorEtapa.map(({ etapa, itens, total }) => {
               const isActive = hoveredEtapa === etapa;
               return (
                 <div
                   key={etapa}
-                  className={`w-full sm:w-72 shrink-0 space-y-3 rounded-xl border px-3 pb-3 pt-[5px] shadow-sm transition-colors ring-1 ring-slate-300/80 ${
-                    isActive ? 'border-primary/60 bg-primary/5 ring-slate-400/90' : 'border-border/70 bg-white/70'
+                  className={`w-full sm:w-72 shrink-0 space-y-3 rounded-lg border px-0 pb-3 pt-0 transition-colors ${
+                    isActive ? 'border-primary/60 bg-[#f2f2f2]' : 'border-border/70 bg-[#f7f7f7]'
                   }`}
                   onDragOver={(event) => handleDragOver(event, etapa)}
                   onDrop={(event) => handleDrop(event, etapa)}
                   onDragLeave={() => setHoveredEtapa(null)}
                 >
-                  <div className="flex items-center justify-between pb-2 border-b border-dashed">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold">{etapa}</h2>
-                      <Badge variant="secondary">{itens.length}</Badge>
+                  <div className="flex flex-col gap-1 border-b border-border/70 bg-[#f1f1f1] px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-semibold text-foreground">{etapa}</h2>
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{itens.length}</Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">{formatCurrency(total)}</span>
+                    <span className="text-[11px] text-muted-foreground">{formatCurrency(total)}</span>
                   </div>
-                  <div className="space-y-3 min-h-[60vh]">
+                  <div className="space-y-3 min-h-[60vh] px-3">
                     {itens.length === 0 && (
                       <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
                         Arraste um negócio para esta etapa
@@ -525,9 +580,11 @@ export default function NegociosPage() {
                         onKeyDown={(event) => handleCardKeyDown(event, negocio.id)}
                         tabIndex={0}
                         role="button"
-                        className={`cursor-grab rounded-lg border border-border/60 shadow-sm transition hover:border-primary/40 hover:shadow-md active:cursor-grabbing ${
+                        className={`cursor-grab rounded-md border border-border/60 bg-white shadow-sm transition hover:border-primary/40 hover:shadow-md active:cursor-grabbing ${
                           draggingId === negocio.id ? 'opacity-80 ring-2 ring-primary/30' : ''
-                        } ${negocio.status === 'Perdido' ? 'bg-rose-200' : ''}`}
+                        } ${negocio.status === 'Perdido' ? 'bg-rose-200' : ''} ${
+                          negocio.status === 'Ganho' ? 'bg-[#d2f0d2]' : ''
+                        }`}
                       >
                         <CardContent className="p-3 space-y-2.5">
                           <div className="flex items-start justify-between gap-2">

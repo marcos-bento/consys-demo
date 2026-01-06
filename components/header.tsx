@@ -49,8 +49,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [username, setUsername] = useState('Usuário');
 
-  const handleLogout = () => {
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Erro ao sair', error);
+    } finally {
+      router.push('/login');
+    }
   };
 
   useEffect(() => {

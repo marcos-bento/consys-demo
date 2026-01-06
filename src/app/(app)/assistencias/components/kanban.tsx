@@ -150,9 +150,9 @@ export default function AssistenciasKanban({ assistencias, getStatusBadge }: Ass
 
   const getPrioridadeColor = (prioridade: string) => {
     switch (prioridade) {
-      case 'Alta': return 'bg-red-50 text-red-700 border border-red-100';
+      case 'Alta': return 'bg-[#d34c46] text-white border border-[#d34c46]';
       case 'Média': return 'bg-yellow-50 text-yellow-700 border border-yellow-100';
-      case 'Baixa': return 'bg-green-50 text-green-700 border border-green-100';
+      case 'Baixa': return 'bg-[#4a8f4a] text-white border border-[#4a8f4a]';
       default: return 'bg-gray-50 text-gray-700 border border-gray-100';
     }
   };

@@ -37,9 +37,9 @@ export default function ClienteDetailPage() {
   const statusColor = (status: string) => {
     switch (status) {
       case 'Ativo':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+        return 'bg-[#4a8f4a] text-white border border-[#4a8f4a]';
       case 'Inativo':
-        return 'bg-rose-50 text-rose-700 border border-rose-100';
+        return 'bg-[#d34c46] text-white border border-[#d34c46]';
       default:
         return 'bg-slate-50 text-slate-700 border border-slate-200';
     }
@@ -264,7 +264,7 @@ export default function ClienteDetailPage() {
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="text-center p-4 border rounded-lg">
-                  <p className="text-2xl font-bold text-emerald-600">
+                  <p className="text-2xl font-bold text-white">
                     R$ {negociosCliente.reduce((sum, n) => sum + n.valor, 0).toLocaleString('pt-BR')}
                   </p>
                   <p className="text-sm text-muted-foreground">Valor Total em Negócios</p>
@@ -276,7 +276,7 @@ export default function ClienteDetailPage() {
                   <p className="text-sm text-muted-foreground">Negócios Fechados</p>
                 </div>
                 <div className="text-center p-4 border rounded-lg">
-                  <p className="text-2xl font-bold text-amber-600">
+                  <p className="text-2xl font-bold text-white">
                     {documentosCliente.length}
                   </p>
                   <p className="text-sm text-muted-foreground">Documentos Gerados</p>

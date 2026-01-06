@@ -78,9 +78,9 @@ export default function AssistenciasPage() {
       'Nova': { color: 'bg-blue-50 text-blue-700 border border-blue-100', label: 'Nova' },
       'Em análise': { color: 'bg-yellow-50 text-yellow-700 border border-yellow-100', label: 'Em análise' },
       'Agendada': { color: 'bg-purple-50 text-purple-700 border border-purple-100', label: 'Agendada' },
-      'Em execução': { color: 'bg-orange-50 text-orange-700 border border-orange-100', label: 'Em execução' },
-      'Concluída': { color: 'bg-green-50 text-green-700 border border-green-100', label: 'Concluída' },
-      'Cancelada': { color: 'bg-red-50 text-red-700 border border-red-100', label: 'Cancelada' },
+      'Em execução': { color: 'bg-[#d17a45] text-white border border-[#d17a45]', label: 'Em execução' },
+      'Concluída': { color: 'bg-[#4a8f4a] text-white border border-[#4a8f4a]', label: 'Concluída' },
+      'Cancelada': { color: 'bg-[#d34c46] text-white border border-[#d34c46]', label: 'Cancelada' },
     };
     return statusMap[etapa];
   };

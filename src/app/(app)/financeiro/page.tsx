@@ -133,11 +133,11 @@ export default function Financeiro() {
   };
 
   const getStatusLancamento = (lancamento: Lancamento) => {
-    if (lancamento.pago) return { text: 'Pago', color: 'bg-emerald-50 text-emerald-700 border border-emerald-100' };
+    if (lancamento.pago) return { text: 'Pago', color: 'bg-[#4a8f4a] text-white border border-[#4a8f4a]' };
     const hoje = new Date();
     const vencimento = new Date(lancamento.vencimento);
-    if (vencimento < hoje) return { text: 'Vencido', color: 'bg-rose-50 text-rose-700 border border-rose-100' };
-    return { text: 'Em aberto', color: 'bg-amber-50 text-amber-700 border border-amber-100' };
+    if (vencimento < hoje) return { text: 'Vencido', color: 'bg-[#d34c46] text-white border border-[#d34c46]' };
+    return { text: 'Em aberto', color: 'bg-[#d17a45] text-white border border-[#d17a45]' };
   };
 
   const formatCurrency = (value: number) => {
@@ -158,7 +158,7 @@ export default function Financeiro() {
             <CardTitle className="text-sm font-medium">A Receber</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="text-2xl font-bold text-emerald-700">{formatCurrency(resumos.aReceber)}</div>
+            <div className="text-2xl font-bold text-white">{formatCurrency(resumos.aReceber)}</div>
             <p className="text-xs text-muted-foreground">Em aberto</p>
           </CardContent>
         </Card>
@@ -167,7 +167,7 @@ export default function Financeiro() {
             <CardTitle className="text-sm font-medium">A Pagar</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="text-2xl font-bold text-rose-700">{formatCurrency(resumos.aPagar)}</div>
+            <div className="text-2xl font-bold text-white">{formatCurrency(resumos.aPagar)}</div>
             <p className="text-xs text-muted-foreground">Em aberto</p>
           </CardContent>
         </Card>
@@ -176,7 +176,7 @@ export default function Financeiro() {
             <CardTitle className="text-sm font-medium">Vencidos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="text-2xl font-bold text-amber-700">{formatCurrency(resumos.vencidos)}</div>
+            <div className="text-2xl font-bold text-white">{formatCurrency(resumos.vencidos)}</div>
             <p className="text-xs text-muted-foreground">Atrasados</p>
           </CardContent>
         </Card>
@@ -185,7 +185,7 @@ export default function Financeiro() {
             <CardTitle className="text-sm font-medium">Saldo Previsto</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className={`text-2xl font-bold ${resumos.saldoPrevisto >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+            <div className={`text-2xl font-bold ${resumos.saldoPrevisto >= 0 ? 'text-white' : 'text-white'}`}>
               {formatCurrency(resumos.saldoPrevisto)}
             </div>
             <p className="text-xs text-muted-foreground">Receber - Pagar</p>
@@ -467,8 +467,8 @@ export default function Financeiro() {
                     <span className="text-muted-foreground">Hoje</span>
                   </div>
                   {selectedLancamento.pago && (
-                    <div className="flex justify-between items-center p-2 bg-emerald-50 rounded">
-                      <span className="text-emerald-700">Marcado como pago</span>
+                    <div className="flex justify-between items-center p-2 bg-[#4a8f4a] rounded">
+                      <span className="text-white">Marcado como pago</span>
                       <span className="text-muted-foreground">Hoje</span>
                     </div>
                   )}

@@ -110,14 +110,14 @@ export function FeriasTab() {
       case 'Solicitado':
         return 'bg-blue-100 text-blue-800';
       case 'Aprovado':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#4a8f4a] text-white';
       case 'Reprovado':
-        return 'bg-red-100 text-red-800';
+        return 'bg-[#d34c46] text-white';
       case 'Cancelado':
       case 'Cancelada':
         return 'bg-gray-100 text-gray-800';
       case 'Em gozo':
-        return 'bg-amber-100 text-amber-800';
+        return 'bg-[#d17a45] text-white';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -163,7 +163,7 @@ export function FeriasTab() {
                   {feriasUI.filter(f => f.status === 'Aprovado').length}
                 </p>
               </div>
-              <Calendar className="h-8 w-8 text-green-500" />
+              <Calendar className="h-8 w-8 text-white" />
             </div>
           </CardContent>
         </Card>
@@ -288,8 +288,8 @@ export function FeriasTab() {
                   </div>
 
                   {newFerias.dataInicio && newFerias.dataFim && (
-                    <div className="p-3 bg-green-50 rounded-md">
-                      <p className="text-sm text-green-700">
+                    <div className="p-3 bg-[#4a8f4a] rounded-md">
+                      <p className="text-sm text-white">
                         Dias solicitados: <strong>
                           {Math.ceil((new Date(newFerias.dataFim).getTime() - new Date(newFerias.dataInicio).getTime()) / (1000 * 60 * 60 * 24)) + 1}
                         </strong>

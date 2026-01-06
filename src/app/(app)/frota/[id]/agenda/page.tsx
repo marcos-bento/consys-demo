@@ -156,7 +156,7 @@ export default function AgendaVeiculoPage() {
       case 'Entrega':
         return 'bg-blue-100 text-blue-800';
       case 'Coleta':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#4a8f4a] text-white';
       case 'Visita técnica':
         return 'bg-purple-100 text-purple-800';
       case 'Outro':
@@ -173,9 +173,9 @@ export default function AgendaVeiculoPage() {
       case 'Em rota':
         return 'bg-blue-100 text-blue-800';
       case 'Concluído':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#4a8f4a] text-white';
       case 'Cancelado':
-        return 'bg-red-100 text-red-800';
+        return 'bg-[#d34c46] text-white';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -221,7 +221,7 @@ export default function AgendaVeiculoPage() {
                 />
               </div>
               <div className="pt-6">
-                <Badge className={veiculo.status === 'Ativo' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                <Badge className={veiculo.status === 'Ativo' ? 'bg-[#4a8f4a] text-white' : 'bg-yellow-100 text-yellow-800'}>
                   {veiculo.status}
                 </Badge>
               </div>
@@ -301,8 +301,8 @@ export default function AgendaVeiculoPage() {
                     </div>
 
                     {hasConflitoHorario && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-800">
+                      <div className="p-3 bg-[#d34c46] border border-[#d34c46] rounded-md">
+                        <p className="text-sm text-white">
                           ⚠️ Conflito de horário detectado! Já existe um agendamento neste período.
                         </p>
                       </div>

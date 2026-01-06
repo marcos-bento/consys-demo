@@ -430,7 +430,7 @@ export default function FunisAdminPage() {
               <Save className="mr-2 h-4 w-4" />
               {isSaving ? 'Salvando...' : 'Salvar etapas'}
             </Button>
-            {error && <span className="text-sm text-rose-600">{error}</span>}
+            {error && <span className="text-sm text-white">{error}</span>}
           </div>
         </CardContent>
       </Card>

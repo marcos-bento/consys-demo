@@ -73,9 +73,9 @@ export default function ProdutoEstoqueDetail() {
 
   const getStatusBadge = (estoque: number, minimo?: number) => {
     const minThreshold = minimo || 10;
-    if (estoque === 0) return { text: 'Sem estoque', color: 'bg-rose-50 text-rose-700 border border-rose-100' };
-    if (estoque < minThreshold) return { text: 'Baixo', color: 'bg-amber-50 text-amber-700 border border-amber-100' };
-    return { text: 'OK', color: 'bg-emerald-50 text-emerald-700 border border-emerald-100' };
+    if (estoque === 0) return { text: 'Sem estoque', color: 'bg-[#d34c46] text-white border border-[#d34c46]' };
+    if (estoque < minThreshold) return { text: 'Baixo', color: 'bg-[#d17a45] text-white border border-[#d17a45]' };
+    return { text: 'OK', color: 'bg-[#4a8f4a] text-white border border-[#4a8f4a]' };
   };
 
   const handleMovimentacao = () => {
@@ -193,13 +193,13 @@ export default function ProdutoEstoqueDetail() {
 
       {/* Alertas */}
       {estoqueBaixo && (
-        <Card className="border-amber-200 bg-amber-50">
+        <Card className="border-[#d17a45] bg-[#d17a45]">
           <CardContent className="flex items-center justify-between py-4">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <AlertTriangle className="h-5 w-5 text-white" />
               <div>
-                <p className="font-medium text-amber-800">Atenção: Estoque baixo</p>
-                <p className="text-sm text-amber-700">
+                <p className="font-medium text-white">Atenção: Estoque baixo</p>
+                <p className="text-sm text-white">
                   Estoque atual ({produto.estoque}) está abaixo do mínimo ({produto.minimo || 10})
                 </p>
               </div>
@@ -208,7 +208,7 @@ export default function ProdutoEstoqueDetail() {
               variant="outline"
               size="sm"
               onClick={() => router.push(`/compras/nova?produtoId=${produto.id}`)}
-              className="border-amber-300 text-amber-700 hover:bg-amber-100"
+              className="border-[#d17a45] text-white hover:bg-[#d17a45]"
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
               Gerar Compra

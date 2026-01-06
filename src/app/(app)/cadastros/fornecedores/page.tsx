@@ -66,9 +66,9 @@ export default function FornecedoresPage() {
   const statusColor = (status: StatusCadastro) => {
     switch (status) {
       case 'Ativo':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+        return 'bg-[#4a8f4a] text-white border border-[#4a8f4a]';
       case 'Inativo':
-        return 'bg-rose-50 text-rose-700 border border-rose-100';
+        return 'bg-[#d34c46] text-white border border-[#d34c46]';
       default:
         return 'bg-slate-50 text-slate-700 border border-slate-200';
     }
@@ -298,7 +298,7 @@ export default function FornecedoresPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="hover:bg-rose-50"
+                            className="hover:bg-[#d34c46]"
                             onClick={() => handleInativar(fornecedor)}
                           >
                             <UserX className="h-4 w-4" />

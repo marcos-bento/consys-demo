@@ -172,9 +172,9 @@ export function PontoTab() {
       case 'Processando':
         return 'bg-yellow-100 text-yellow-800';
       case 'Concluido':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#4a8f4a] text-white';
       case 'Erro':
-        return 'bg-red-100 text-red-800';
+        return 'bg-[#d34c46] text-white';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -220,7 +220,7 @@ export function PontoTab() {
                 <p className="text-sm font-medium text-muted-foreground">Horas Trabalhadas</p>
                 <p className="text-2xl font-bold">{totais.horasTrabalhadas}h</p>
               </div>
-              <Clock className="h-8 w-8 text-green-500" />
+              <Clock className="h-8 w-8 text-white" />
             </div>
           </CardContent>
         </Card>
@@ -244,7 +244,7 @@ export function PontoTab() {
                 <p className="text-sm font-medium text-muted-foreground">Importações</p>
                 <p className="text-2xl font-bold">{importacoesPonto.length}</p>
               </div>
-              <Upload className="h-8 w-8 text-orange-500" />
+              <Upload className="h-8 w-8 text-white" />
             </div>
           </CardContent>
         </Card>
@@ -484,7 +484,7 @@ export function PontoTab() {
                       <TableCell>{registro.saida}</TableCell>
                       <TableCell>{registro.horasTrabalhadas}h</TableCell>
                       <TableCell>
-                        <span className={(registro.horasExtras ?? 0) > 0 ? 'text-green-600 font-medium' : ''}>
+                        <span className={(registro.horasExtras ?? 0) > 0 ? 'text-white font-medium' : ''}>
                           {(registro.horasExtras ?? 0)}h
                         </span>
                       </TableCell>

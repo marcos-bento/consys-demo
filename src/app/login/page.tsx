@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Login() {
   const router = useRouter();
@@ -9,6 +9,12 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!error) return;
+    const timeout = setTimeout(() => setError(""), 5000);
+    return () => clearTimeout(timeout);
+  }, [error]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +54,7 @@ export default function Login() {
             <input
               type="text"
               value={username}
+              onFocus={() => setError("")}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded border p-2"
               required
@@ -59,13 +66,14 @@ export default function Login() {
             <input
               type="password"
               value={password}
+              onFocus={() => setError("")}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded border p-2"
               required
               autoComplete="current-password"
             />
           </div>
-          {error ? (
+      {error ? (
             <p className="text-sm text-red-600">{error}</p>
           ) : null}
           <button

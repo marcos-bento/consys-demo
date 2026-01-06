@@ -18,11 +18,11 @@ const statusColor = (status: StatusCompra) => {
     case 'Cotação':
       return 'bg-blue-50 text-blue-700 border border-blue-100';
     case 'Pedido':
-      return 'bg-amber-50 text-amber-700 border border-amber-100';
+      return 'bg-[#d17a45] text-white border border-[#d17a45]';
     case 'Recebido':
-      return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+      return 'bg-[#4a8f4a] text-white border border-[#4a8f4a]';
     case 'Cancelado':
-      return 'bg-rose-50 text-rose-700 border border-rose-100';
+      return 'bg-[#d34c46] text-white border border-[#d34c46]';
     default:
       return 'bg-slate-50 text-slate-700 border border-slate-200';
   }
@@ -202,7 +202,7 @@ export default function CompraDetail() {
             </Button>
           )}
           {compra.status !== 'Cancelado' && (
-            <Button variant="outline" className="hover:bg-rose-50" onClick={() => handleFluxo('cancelar')}>
+            <Button variant="outline" className="hover:bg-[#d34c46]" onClick={() => handleFluxo('cancelar')}>
               <XCircle className="mr-2 h-4 w-4" />
               Cancelar
             </Button>

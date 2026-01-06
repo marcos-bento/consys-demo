@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -249,9 +249,9 @@ export default function LeadDetail() {
   const getStatusColor = (status: StatusNegocio) => {
     switch (status) {
       case 'Ganho':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+        return 'bg-[#4a8f4a] text-white border border-[#4a8f4a]';
       case 'Perdido':
-        return 'bg-rose-50 text-rose-700 border border-rose-100';
+        return 'bg-[#d34c46] text-white border border-[#d34c46]';
       default:
         return 'bg-blue-50 text-blue-700 border border-blue-100';
     }
@@ -335,10 +335,14 @@ export default function LeadDetail() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            className={negocio.status === 'Perdido' ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-red-600 text-white hover:bg-red-700'}
-            onClick={() => handleStatus(negocio.status === 'Perdido' ? 'Ativo' : 'Perdido')}
+            className={
+              negocio.status === 'Perdido' || negocio.status === 'Ganho'
+                ? 'bg-[#4a8f4a] text-white hover:bg-[#4a8f4a]'
+                : 'bg-[#d34c46] text-white hover:bg-[#d34c46]'
+            }
+            onClick={() => handleStatus(negocio.status === 'Perdido' || negocio.status === 'Ganho' ? 'Ativo' : 'Perdido')}
           >
-            {negocio.status === 'Perdido' ? (
+            {negocio.status === 'Perdido' || negocio.status === 'Ganho' ? (
               <>
                 <Undo2 className="mr-2 h-4 w-4" />
                 Reabrir
@@ -498,7 +502,7 @@ export default function LeadDetail() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="hover:bg-emerald-50"
+                    className="hover:bg-[#4a8f4a]"
                     onClick={() => handleStatus('Ganho')}
                   >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -507,7 +511,7 @@ export default function LeadDetail() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="hover:bg-rose-50"
+                    className="hover:bg-[#d34c46]"
                     onClick={() => handleStatus('Perdido')}
                   >
                     <XCircle className="mr-2 h-4 w-4" />
@@ -594,7 +598,7 @@ export default function LeadDetail() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-red-600 hover:text-red-700"
+                          className="text-white hover:text-white"
                           onClick={() => handleExcluirInteracao(interacao.id)}
                           aria-label="Excluir interacao"
                         >

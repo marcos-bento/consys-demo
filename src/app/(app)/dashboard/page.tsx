@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User, CheckCircle, XCircle, Clock, DollarSign, ShoppingCart } from 'lucide-react';
@@ -12,8 +15,8 @@ const stats = [
 
 const statusData = [
   { status: 'Aguardando', count: 20, color: 'bg-yellow-500' },
-  { status: 'Aprovado', count: 15, color: 'bg-green-500' },
-  { status: 'Rejeitado', count: 10, color: 'bg-red-500' },
+  { status: 'Aprovado', count: 15, color: 'bg-[#4a8f4a]' },
+  { status: 'Rejeitado', count: 10, color: 'bg-[#d34c46]' },
 ];
 
 const activities = [
@@ -33,13 +36,39 @@ const proposals = [
   { cliente: 'Cliente E', valor: 'R$ 40.000', status: 'Aguardando' },
 ];
 
+const getGreeting = (hour: number) => {
+  if (hour >= 18) return 'Boa noite';
+  if (hour >= 12) return 'Boa tarde';
+  return 'Bom dia';
+};
+
 export default function Dashboard() {
   const maxCount = Math.max(...statusData.map(d => d.count));
+  const [username, setUsername] = useState('Usuário');
+  const [greeting, setGreeting] = useState('Bom dia');
+
+  useEffect(() => {
+    setGreeting(getGreeting(new Date().getHours()));
+    const loadUser = async () => {
+      try {
+        const resMe = await fetch('/api/users/me', { cache: 'no-store', credentials: 'include' });
+        if (!resMe.ok) return;
+        const me = await resMe.json();
+        if (me?.username) {
+          setUsername(me.username);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar usuário', error);
+      }
+    };
+    loadUser();
+  }, []);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-gray-600">{greeting}, {username}</p>
         <p className="text-gray-600">Visão geral do sistema</p>
       </div>
 

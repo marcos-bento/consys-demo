@@ -98,7 +98,7 @@ export default function FrotaPage() {
   const getStatusBadgeColor = (status: StatusVeiculo) => {
     switch (status) {
       case 'Ativo':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[#4a8f4a] text-white';
       case 'Em manutenção':
         return 'bg-yellow-100 text-yellow-800';
       case 'Inativo':
@@ -115,7 +115,7 @@ export default function FrotaPage() {
       case 'Caminhão':
         return 'bg-purple-100 text-purple-800';
       case 'Utilitário':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-[#d17a45] text-white';
       case 'Carro':
         return 'bg-indigo-100 text-indigo-800';
       default:

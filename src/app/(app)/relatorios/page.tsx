@@ -79,14 +79,14 @@ export default function RelatoriosPage() {
   const renderVariacao = (variacao: number) => {
     if (variacao > 0) {
       return (
-        <div className="flex items-center text-green-600">
+        <div className="flex items-center text-white">
           <TrendingUp className="h-4 w-4 mr-1" />
           +{variacao}%
         </div>
       );
     } else if (variacao < 0) {
       return (
-        <div className="flex items-center text-red-600">
+        <div className="flex items-center text-white">
           <TrendingDown className="h-4 w-4 mr-1" />
           {variacao}%
         </div>
@@ -208,7 +208,7 @@ export default function RelatoriosPage() {
                 <span className="w-24 text-sm font-medium">{status}</span>
                 <div className="flex-1 bg-gray-200 rounded-full h-4">
                   <div
-                    className="bg-green-500 h-4 rounded-full"
+                    className="bg-[#4a8f4a] h-4 rounded-full"
                     style={{ width: `${width}%` }}
                   ></div>
                 </div>
