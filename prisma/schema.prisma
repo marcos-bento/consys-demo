@@ -318,6 +318,7 @@ model Deal {
   lossReason        PipelineLossReason? @relation(fields: [lossReasonId], references: [id])
   activities        DealActivity[]
   documents         DealDocument[]
+  tasks             Task[]
 
   @@index([pipelineId])
   @@index([stageId])
@@ -391,8 +392,29 @@ model User {
   role               Role              @relation(fields: [roleId], references: [id])
   vehicles           Vehicle[]
   vehicleSchedules   VehicleSchedule[]
+  tasksAssigned      Task[]           @relation("TaskAssignedTo")
+  tasksCreated       Task[]           @relation("TaskCreatedBy")
 
   @@index([roleId])
+}
+
+model Task {
+  id           String   @id @default(uuid()) @db.Uuid
+  dealId       String?  @db.Uuid
+  assignedToId String?  @db.Uuid
+  createdById  String?  @db.Uuid
+  message      String   @db.Text
+  scheduledAt  DateTime
+  status       String   @default("OPEN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deal         Deal?    @relation(fields: [dealId], references: [id])
+  assignedTo   User?    @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  createdBy    User?    @relation("TaskCreatedBy", fields: [createdById], references: [id])
+
+  @@index([dealId])
+  @@index([assignedToId])
+  @@index([scheduledAt])
 }
 
 model Permission {

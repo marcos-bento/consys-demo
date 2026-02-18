@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { cookies, headers } from "next/headers";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -63,6 +65,29 @@ export async function POST(req: Request) {
         createdAt: true,
         role: { select: { name: true } },
       },
+    });
+
+    const cookieStore = await cookies();
+    const actorId = cookieStore.get("auth_user")?.value ?? null;
+    const requestHeaders = await headers();
+    const userAgent = requestHeaders.get("user-agent");
+    const ip =
+      requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      requestHeaders.get("x-real-ip");
+    const url =
+      requestHeaders.get("referer") ??
+      requestHeaders.get("origin") ??
+      req.url;
+    await writeAuditLog({
+      userId: actorId,
+      entityType: "User",
+      entityId: created.id,
+      action: "CREATE",
+      message: `User created: ${created.username}`,
+      metadata: { role: created.role?.name ?? "" },
+      url,
+      ip,
+      userAgent,
     });
 
     return NextResponse.json(

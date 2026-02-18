@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, Search, User } from 'lucide-react';
+import { Calendar, Menu, Search, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
   const [username, setUsername] = useState('Usuário');
+  const [tasksOpen, setTasksOpen] = useState(false);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasks, setTasks] = useState<
+    {
+      id: string;
+      message: string;
+      scheduledAt: string;
+      status: string;
+      deal?: { id: string; code: string; title: string } | null;
+    }[]
+  >([]);
 
   const handleLogout = async () => {
     try {
@@ -76,6 +87,24 @@ export default function Header({ onMenuClick }: HeaderProps) {
     loadUser();
   }, []);
 
+  useEffect(() => {
+    if (!tasksOpen) return;
+    const loadTasks = async () => {
+      setTasksLoading(true);
+      try {
+        const res = await fetch('/api/tasks?status=OPEN', { cache: 'no-store', credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        setTasks(data.tasks ?? []);
+      } catch (error) {
+        console.error('Erro ao carregar tarefas', error);
+      } finally {
+        setTasksLoading(false);
+      }
+    };
+    void loadTasks();
+  }, [tasksOpen]);
+
   const handleConfirmReset = () => {
     resetDemo();
     setIsResetOpen(false);
@@ -97,6 +126,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
               <Input placeholder="Buscar..." className="pl-8 w-full" />
             </div>
+            <Button variant="ghost" size="icon" onClick={() => setTasksOpen(true)} aria-label="Ver tarefas">
+              <Calendar size={20} />
+            </Button>
             {isMounted ? (
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center space-x-2">
@@ -146,6 +178,41 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 Resetar e voltar
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={tasksOpen} onOpenChange={setTasksOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tarefas agendadas</DialogTitle>
+            <DialogDescription>Veja as tarefas atribuidas a voce.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {tasksLoading && <p className="text-sm text-muted-foreground">Carregando tarefas...</p>}
+            {!tasksLoading && tasks.length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhuma tarefa agendada.</p>
+            )}
+            {!tasksLoading &&
+              tasks.map((task) => (
+                <div key={task.id} className="rounded-md border p-3 space-y-1">
+                  <p className="text-sm font-medium text-foreground">{task.message}</p>
+                  <div className="text-xs text-muted-foreground">
+                    <span>
+                      {new Date(task.scheduledAt).toLocaleDateString('pt-BR')}{" "}
+                      {new Date(task.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    {task.deal?.code && (
+                      <span> · {task.deal.title || task.deal.code}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => router.push('/tarefas')}>
+              Abrir tarefas
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

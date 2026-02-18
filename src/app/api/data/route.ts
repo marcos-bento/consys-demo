@@ -479,6 +479,7 @@ export async function GET() {
     const negocios = deals.map((deal) => ({
       id: deal.id,
       codigo: deal.code,
+      titulo: deal.title ?? "",
       empresa: deal.client?.name ?? "",
       contato: deal.contactName ?? deal.client?.tradeName ?? "",
       telefone: deal.contactPhone ?? deal.client?.phone ?? undefined,

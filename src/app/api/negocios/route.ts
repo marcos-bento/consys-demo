@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { cookies, headers } from "next/headers";
 
 import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "@/lib/audit";
 
 const normalize = (value?: string | null) => (value ?? "").toLowerCase().trim();
 
@@ -104,6 +106,7 @@ const createDealCode = () => {
 export async function POST(req: Request) {
   try {
     const payload = (await req.json()) as {
+      titulo?: string;
       empresa?: string;
       contato?: string;
       telefone?: string;
@@ -124,6 +127,7 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    const titulo = payload.titulo?.trim();
 
     const pipelineName = payload.funil?.trim() || "Vendas";
     const pipeline = await getOrCreatePipeline(pipelineName);
@@ -173,7 +177,7 @@ export async function POST(req: Request) {
         pipelineId: pipeline.id,
         stageId: stage.id,
         clientId: client.id,
-        title: payload.observacao?.trim() || `Negocio - ${empresa}`,
+        title: titulo || payload.observacao?.trim() || `Negocio - ${empresa}`,
         contactName: payload.contato?.trim() || null,
         contactPhone: payload.telefone?.trim() || null,
         estimatedValue: payload.valor ?? 0,
@@ -191,6 +195,29 @@ export async function POST(req: Request) {
         message: `Negocio criado em ${stage.name}.`,
         createdById: owner?.id ?? null,
       },
+    });
+
+    const cookieStore = await cookies();
+    const actorId = cookieStore.get("auth_user")?.value ?? null;
+    const requestHeaders = await headers();
+    const userAgent = requestHeaders.get("user-agent");
+    const ip =
+      requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      requestHeaders.get("x-real-ip");
+    const url =
+      requestHeaders.get("referer") ??
+      requestHeaders.get("origin") ??
+      req.url;
+    await writeAuditLog({
+      userId: actorId,
+      entityType: "Negocio",
+      entityId: created.id,
+      action: "CREATE",
+      message: `Negocio criado: ${created.code}`,
+      metadata: { titulo: created.title ?? "", empresa },
+      url,
+      ip,
+      userAgent,
     });
 
     return NextResponse.json({ id: created.id }, { status: 201 });

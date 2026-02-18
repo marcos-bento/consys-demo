@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type DragEvent, type KeyboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { EllipsisVertical, Plus, Search } from 'lucide-react';
+import { Calendar, Plus, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -26,7 +25,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useDemoData } from '@/src/lib/demo-context';
+import type { Proposta } from '@/lib/mock/comercial';
 import type { PrioridadeNegocio, StatusNegocio } from '@/lib/mock/negocios';
 
 type PipelineData = {
@@ -48,7 +49,7 @@ const badgeByStatus: Record<StatusNegocio, string> = {
 export default function NegociosPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { negocios, setNegocios, resetDemo } = useDemoData();
+  const { negocios, propostas, setNegocios, resetDemo } = useDemoData();
   const [funilSelecionado, setFunilSelecionado] = useState<string>('Vendas');
   const [funisOptions, setFunisOptions] = useState<string[]>(fallbackFunis);
   const [pipelinesData, setPipelinesData] = useState<PipelineData[]>([]);
@@ -68,6 +69,7 @@ export default function NegociosPage() {
   const [motivosPerda, setMotivosPerda] = useState<{ id: string; name: string }[]>([]);
   const [motivoSelecionado, setMotivoSelecionado] = useState<string>('');
   const [novoNegocio, setNovoNegocio] = useState({
+    titulo: '',
     empresa: '',
     contato: '',
     telefone: '',
@@ -187,6 +189,7 @@ export default function NegociosPage() {
     return negocios.filter((negocio) => {
       const matchesFunil = negocio.funil === funilSelecionado;
       const matchesSearch =
+        (negocio.titulo ?? '').toLowerCase().includes(search.toLowerCase()) ||
         negocio.empresa.toLowerCase().includes(search.toLowerCase()) ||
         negocio.contato.toLowerCase().includes(search.toLowerCase()) ||
         negocio.codigo.toLowerCase().includes(search.toLowerCase());
@@ -197,12 +200,30 @@ export default function NegociosPage() {
     });
   }, [negocios, funilSelecionado, search, responsavelFilter, prioridadeFilter, statusFilter]);
 
+  const totalProposta = (proposta: Proposta) =>
+    proposta.itens.reduce((sum, item) => sum + item.qtd * item.valorUnit, 0) - proposta.desconto;
+
+  const getUltimoValorProposta = (negocioEmpresa: string) => {
+    const cliente = negocioEmpresa.trim().toLowerCase();
+    const propostasCliente = propostas.filter(
+      (proposta) => proposta.cliente.trim().toLowerCase() === cliente,
+    );
+    if (propostasCliente.length === 0) return null;
+    const ultima = [...propostasCliente].sort(
+      (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime(),
+    )[0];
+    return totalProposta(ultima);
+  };
+
+  const getValorNegocio = (negocio: typeof negocios[number]) =>
+    getUltimoValorProposta(negocio.empresa) ?? negocio.valor;
+
   const negociosPorEtapa = etapas.map((etapa) => ({
     etapa,
     itens: negociosFiltrados.filter((negocio) => negocio.etapa === etapa),
     total: negociosFiltrados
       .filter((negocio) => negocio.etapa === etapa)
-      .reduce((sum, negocio) => sum + negocio.valor, 0),
+      .reduce((sum, negocio) => sum + getValorNegocio(negocio), 0),
   }));
 
   const atualizarNegocio = async (id: string, payload: { etapa?: string; status?: StatusNegocio; lossReasonId?: string }) => {
@@ -301,12 +322,13 @@ export default function NegociosPage() {
   };
 
   const handleCriarNegocio = async () => {
-    if (!novoNegocio.empresa.trim()) return;
+    if (!novoNegocio.titulo.trim() || !novoNegocio.empresa.trim()) return;
     try {
       const res = await fetch('/api/negocios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          titulo: novoNegocio.titulo,
           empresa: novoNegocio.empresa,
           contato: novoNegocio.contato || 'Contato não informado',
           telefone: novoNegocio.telefone || undefined,
@@ -324,6 +346,7 @@ export default function NegociosPage() {
       await resetDemo();
       setIsDialogOpen(false);
       setNovoNegocio({
+        titulo: '',
         empresa: '',
         contato: '',
         telefone: '',
@@ -339,6 +362,15 @@ export default function NegociosPage() {
   };
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
   };
 
   if (!funilInitReady) {
@@ -437,6 +469,15 @@ export default function NegociosPage() {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-1">
+                    <Label>Titulo do negocio *</Label>
+                    <Input
+                      value={novoNegocio.titulo}
+                      onChange={(e) => setNovoNegocio({ ...novoNegocio, titulo: e.target.value })}
+                      placeholder="Resumo do negocio"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label>Empresa *</Label>
                     <Input
                       value={novoNegocio.empresa}
@@ -461,16 +502,7 @@ export default function NegociosPage() {
                       placeholder="(11) 99999-0000"
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <Label>Valor estimado</Label>
-                      <Input
-                        type="number"
-                        value={novoNegocio.valor}
-                        onChange={(e) => setNovoNegocio({ ...novoNegocio, valor: parseFloat(e.target.value) || 0 })}
-                        min="0"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label>Responsável</Label>
                       <Select
@@ -560,7 +592,10 @@ export default function NegociosPage() {
                   <div className="flex flex-col gap-1 border-b border-border/70 bg-[#f1f1f1] px-3 py-2">
                     <div className="flex items-center justify-between">
                       <h2 className="text-sm font-semibold text-foreground">{etapa}</h2>
-                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5">{itens.length}</Badge>
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                        <span>{itens.length}</span>
+                        <span className="ml-1 text-[9px] font-normal">Negócios</span>
+                      </Badge>
                     </div>
                     <span className="text-[11px] text-muted-foreground">{formatCurrency(total)}</span>
                   </div>
@@ -570,7 +605,9 @@ export default function NegociosPage() {
                         Arraste um negócio para esta etapa
                       </div>
                     )}
-                    {itens.map((negocio) => (
+                    {itens.map((negocio) => {
+                      const valorNegocio = getValorNegocio(negocio);
+                      return (
                       <Card
                         key={negocio.id}
                         draggable
@@ -586,61 +623,45 @@ export default function NegociosPage() {
                           negocio.status === 'Ganho' ? 'bg-[#d2f0d2]' : ''
                         }`}
                       >
-                        <CardContent className="p-3 space-y-2.5">
+                        <CardContent className="px-2.5 py-[1px] space-y-1">
                           <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold leading-tight text-foreground">{negocio.empresa}</p>
-                              <p className="text-xs text-muted-foreground">{negocio.contato}</p>
-                            </div>
-                            <div className="flex items-start gap-1">
-                              <Badge className={`${badgeByStatus[negocio.status]} text-[11px] px-2 py-0.5`}>
-                                {negocio.status}
-                              </Badge>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:bg-primary/5"
-                                    onClick={(event) => event.stopPropagation()}
-                                    onMouseDown={(event) => event.stopPropagation()}
-                                  >
-                                    <EllipsisVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {etapas
-                                    .filter((e) => e !== negocio.etapa)
-                                    .map((e) => (
-                                      <DropdownMenuItem key={e} onSelect={() => handleMoverEtapa(negocio.id, e)}>
-                                        Mover para {e}
-                                      </DropdownMenuItem>
-                                    ))}
-                                  <DropdownMenuItem onSelect={() => handleStatus(negocio.id, 'Ganho')}>
-                                    Marcar como ganho
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => handleStatus(negocio.id, 'Perdido')}>
-                                    Marcar como perdido
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                            <p
+                              className="flex-1 truncate text-[13px] font-semibold leading-tight text-foreground"
+                              title={negocio.titulo || negocio.empresa}
+                            >
+                              {negocio.titulo || negocio.empresa}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              <Calendar
+                                className={`h-4 w-4 ${negocio.tags?.includes('Follow-up') ? 'text-emerald-600' : 'text-muted-foreground/60'}`}
+                                title={negocio.tags?.includes('Follow-up') ? 'Com tarefa agendada' : 'Sem tarefa agendada'}
+                              />
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-semibold">{formatCurrency(negocio.valor)}</span>
-                            <span className="text-xs text-muted-foreground">Resp.: {negocio.responsavel}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="flex-1 truncate text-[11px] text-muted-foreground" title={negocio.empresa}>
+                              {negocio.empresa}
+                            </p>
+                            {valorNegocio > 0 ? (
+                              <span className="text-[11px] font-semibold text-foreground">
+                                {formatCurrency(valorNegocio)}
+                              </span>
+                            ) : null}
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <Avatar className="h-4 w-4" title={negocio.responsavel}>
+                              <AvatarFallback className="text-[9px]">
+                                {getInitials(negocio.responsavel)}
+                              </AvatarFallback>
+                            </Avatar>
                             <span>{negocio.diasNoFunil}d no funil</span>
-                            <Badge variant="outline" className="px-2 py-0 text-[11px]">
-                              Prioridade {negocio.prioridade}
-                            </Badge>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -676,7 +697,7 @@ export default function NegociosPage() {
                   <td className="px-4 py-3">
                     <Badge className={`${badgeByStatus[negocio.status]} text-[11px] px-2 py-0.5`}>{negocio.status}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold">{formatCurrency(negocio.valor)}</td>
+                  <td className="px-4 py-3 text-right font-semibold">{formatCurrency(getValorNegocio(negocio))}</td>
                 </tr>
               ))}
               {negociosFiltrados.length === 0 && (
@@ -740,3 +761,4 @@ export default function NegociosPage() {
     </div>
   );
 }
+

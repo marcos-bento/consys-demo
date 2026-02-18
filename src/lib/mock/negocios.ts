@@ -5,6 +5,7 @@ export type PrioridadeNegocio = 'Alta' | 'Média' | 'Baixa';
 export interface Negocio {
   id: string;
   codigo: string;
+  titulo: string;
   empresa: string;
   contato: string;
   telefone?: string;
@@ -24,6 +25,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '1',
     codigo: 'NEG-001',
+    titulo: 'Implantacao ConSYS - Industria A',
     empresa: 'Empresa A',
     contato: 'João Silva',
     telefone: '(11) 99999-0001',
@@ -40,6 +42,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '2',
     codigo: 'NEG-002',
+    titulo: 'CRM e funil comercial',
     empresa: 'Tech Solutions',
     contato: 'Maria Santos',
     telefone: '(11) 98888-0002',
@@ -56,6 +59,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '3',
     codigo: 'NEG-003',
+    titulo: 'Proposta de automacao',
     empresa: 'Inovação Ltda',
     contato: 'Pedro Oliveira',
     telefone: '(21) 97777-0003',
@@ -71,6 +75,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '4',
     codigo: 'NEG-004',
+    titulo: 'Negociacao contrato anual',
     empresa: 'Global Corp',
     contato: 'Lucas Ferreira',
     telefone: '(31) 96666-0004',
@@ -87,6 +92,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '5',
     codigo: 'NEG-005',
+    titulo: 'Pacote inicial ConSYS',
     empresa: 'StartUp XYZ',
     contato: 'Fernanda Alves',
     telefone: '(41) 95555-0005',
@@ -101,6 +107,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '6',
     codigo: 'NEG-006',
+    titulo: 'Atualizacao de modulos',
     empresa: 'Mega Industries',
     contato: 'Roberto Gomes',
     telefone: '(61) 94444-0006',
@@ -116,6 +123,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '7',
     codigo: 'NEG-007',
+    titulo: 'Projeto de integracao',
     empresa: 'Future Tech',
     contato: 'Carla Mendes',
     telefone: '(51) 93333-0007',
@@ -130,6 +138,7 @@ export const mockNegocios: Negocio[] = [
   {
     id: '8',
     codigo: 'NEG-008',
+    titulo: 'Consolidacao financeira',
     empresa: 'Alpha Beta',
     contato: 'Thiago Rocha',
     telefone: '(71) 92222-0008',
@@ -142,3 +151,4 @@ export const mockNegocios: Negocio[] = [
     diasNoFunil: 15,
   },
 ];
+
