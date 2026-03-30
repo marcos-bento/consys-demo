@@ -810,11 +810,11 @@ export default function LeadDetail() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            className={
-              negocio.status === 'Perdido' || negocio.status === 'Ganho'
-                ? 'bg-[#4a8f4a] text-white hover:bg-[#4a8f4a]'
-                : 'bg-[#d34c46] text-white hover:bg-[#d34c46]'
-            }
+              className={
+                negocio.status === 'Perdido' || negocio.status === 'Ganho'
+                  ? 'bg-[#4a8f4a] text-white hover:bg-[#4a8f4a]'
+                  : 'bg-[#ef362e] text-white hover:bg-[#ef362e]'
+              }
             onClick={() => handleStatus(negocio.status === 'Perdido' || negocio.status === 'Ganho' ? 'Ativo' : 'Perdido')}
           >
             {negocio.status === 'Perdido' || negocio.status === 'Ganho' ? (
